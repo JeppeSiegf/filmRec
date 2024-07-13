@@ -33,7 +33,7 @@ class FilmRepository:
         if total_watches is not None:
             film.total_watches = total_watches
         if ref:
-            film.ref = ref
+            film.page_ref = ref
         if img_reg:
             film.img_reg = img_reg
         if genres is not None:

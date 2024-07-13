@@ -30,7 +30,7 @@ class Film(db.Model):
             'release_year': self.year,
             'total_watches': self.total_watches,
             'last_updated': self.last_updated.isoformat(),
-            'ref': self.ref,
+            'page_ref': self.page_ref,
             'img_reg': self.img_reg,
             'genres': [genre.to_dict() for genre in self.genres]
         }
