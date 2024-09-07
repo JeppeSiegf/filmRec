@@ -2,9 +2,7 @@ import asyncio
 import aiohttp
 from bs4 import BeautifulSoup
 
-
 async def fetch_page(session, url):
-    # hi
     headers = {
         "referer": "https://letterboxd.com",
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
@@ -12,12 +10,13 @@ async def fetch_page(session, url):
     async with session.get(url, headers=headers) as response:
         return await response.text()
 
-
 class FilmListCollector:
-    def __init__(self, author: str, title: str) -> None:
-        if not author.isalnum():
-            raise Exception("Invalid author")
+    def __init__(self, user: str, title: str) -> None:
+        if not user.isalnum():
+            raise Exception("Invalid user")
 
+        self.url = f"https://letterboxd.com/{user}/list/{title}/detail/"
+        print(self.url)
         self.filmCount = None
         self.movies = []
 
@@ -26,9 +25,7 @@ class FilmListCollector:
         return BeautifulSoup(page_content, 'html.parser')
 
     async def fetch_movie_info(self, session, page_url):
-
         page = await self.get_parsed_page(session, page_url)
-
         img = page.find("ul", {"class": ["js-list-entries", "poster-list", "-p125", "-grid", "film-list"]})
         if not img:
             return []
@@ -37,20 +34,17 @@ class FilmListCollector:
         years = img.find_all('small', {"class": ["metadata"]})
 
         movie_list = []
-        for item in titles:
-            movie_url = item.parent.get('data-film-slug', '')
-            movie_id = item.parent.get('data-film-id', '')
-            movie_list.append((item.get('alt', ''), movie_url, movie_id))
+        for title_item, year_item in zip(titles, years):
+            movie_url = title_item.parent.get('data-film-slug', '')
+            # movie_id = title_item.parent.get('data-film-id', '')
+            movie_title = title_item.get('alt', '')
+            movie_year = year_item.find('a').text.strip() if year_item.find('a') else "Unknown"
 
-        year_list = []
-        for item in years:
-            movie_year = item.find('a').text.strip()
-            year_list.append(movie_year)
-
-        for i in range(len(movie_list)):
-            movie_list[i] = movie_list[i] + (year_list[i],)
-
+            movie_list.append((movie_title, movie_url, movie_year))
+        print(movie_list)
         return movie_list
+
+
 
     async def film_count(self):
         page = 1
@@ -62,6 +56,7 @@ class FilmListCollector:
         async with aiohttp.ClientSession() as session:
             while prev != curr:
                 page_url = f"{self.url}page/{page}/"
+                print(page_url)
                 async with semaphore:
                     movies = await self.fetch_movie_info(session, page_url)
                     movie_list.extend(movies)
@@ -75,3 +70,13 @@ class FilmListCollector:
 
         if self.filmCount == 0:
             raise Exception("No list exists")
+
+# Run the asynchronous film count method
+async def main():
+    collector = FilmListCollector('brthrash', 'directors')
+    await collector.film_count()
+    movielist = collector.movies
+    print(movielist)
+
+if __name__ == "__main__":
+    asyncio.run(main())

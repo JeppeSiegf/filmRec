@@ -1,4 +1,5 @@
 from api.repositories.film_repository import FilmRepository
+from api.models.film import Film
 
 class FilmService:
 
@@ -7,16 +8,20 @@ class FilmService:
         return FilmRepository.get_all_films()
 
     @staticmethod
-    def get_film_by_id(film_id):
-        return FilmRepository.get_film_by_id(film_id)
+    def get_film_by_page_ref(page_ref):
+        return FilmRepository.get_film_by_ref(page_ref)
 
     @staticmethod
-    def create_film(title, year, total_watches, ref, img_reg, genres):
-        return FilmRepository.create_film(title, year, total_watches, ref, img_reg, genres)
+    def create_film(film: Film):
+        if not isinstance(film, Film):
+            raise TypeError("Expected a Film instance.")
+        return FilmRepository.create_film(film)
 
     @staticmethod
-    def update_film(film_id, title=None, year=None, total_watches=None, ref=None, img_reg=None, genres=None):
-        return FilmRepository.update_film(film_id, title, year, total_watches, ref, img_reg, genres)
+    def update_film(film: Film):
+        if not isinstance(film, Film):
+            raise TypeError("Expected a Film instance.")
+        return FilmRepository.update_film(film)
 
     @staticmethod
     def delete_film(film_id):

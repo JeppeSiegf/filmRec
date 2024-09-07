@@ -1,36 +1,24 @@
 from datetime import datetime
 from api import db
-from api.models.genre import film_genre_association
 
 
-# app/models/film.py
-film_genre = db.Table(
-    'film_genre',
-    db.Column('film_id', db.Integer, db.ForeignKey('film.id'), primary_key=True),
-    db.Column('genre_id', db.Integer, db.ForeignKey('genre.id'), primary_key=True)
-)
+
 
 class Film(db.Model):
-
     __tablename__ = 'film'
 
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(1000), nullable=False)
-    release_year = db.Column(db.Integer, nullable=False)
-    total_watches = db.Column(db.Integer, nullable=False, default=0)
-    last_updated = db.Column(db.Date, nullable=False)
-    page_ref = db.Column(db.String(500), nullable=False)
-    img_ref = db.Column(db.String(500), nullable=False)
+    # Reflecting the exact schema provided
+    page_ref = db.Column(db.String(250), primary_key=True, nullable=False)  # Primary key - Film slug used on source site
+    image_ref = db.Column(db.String(250))  # Optional image reference- wip
+    id = db.Column(db.Integer, default=db.func.nextval('id_seq'), nullable=False)  # Auto-incrementing ID using PostgreSQL sequence
+    title = db.Column(db.String(500))  # Film title
+    total_watches = db.Column(db.Integer)  # Total watches count
+    last_update = db.Column(db.Date, nullable=False)  # Last update date
+    release_year = db.Column(db.Integer)  # Year of release
 
-    genres = db.relationship('Genre', secondary=film_genre, backref=db.backref('related_films', lazy='dynamic'))
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'title': self.title,
-            'release_year': self.year,
-            'total_watches': self.total_watches,
-            'last_updated': self.last_updated.isoformat(),
-            'page_ref': self.page_ref,
-            'img_reg': self.img_reg,
-            'genres': [genre.to_dict() for genre in self.genres]
-        }
+    # Relationship example if required
+    genres = db.relationship('Genre', secondary='film_genre', backref=db.backref('films', lazy='dynamic'))
+
+
+    def __repr__(self):
+        return f'<Film {self.title} ({self.release_year}) (page_ref={self.page_ref})>'

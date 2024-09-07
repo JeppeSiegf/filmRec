@@ -1,21 +1,17 @@
 from api import db
 
-film_genre_association = db.Table('genre_film',
+film_genre = db.Table(
+    'film_genre',
     db.Column('genre_id', db.Integer, db.ForeignKey('genre.id'), primary_key=True),
-    db.Column('film_id', db.Integer, db.ForeignKey('film.id'), primary_key=True)
+    db.Column('page_ref', db.String(250), db.ForeignKey('film.page_ref'), primary_key=True)
 )
 
 
 class Genre(db.Model):
     __tablename__ = 'genre'
 
-    id = db.Column(db.Integer, primary_key=True)
-    genre = db.Column(db.String(80), unique=True, nullable=False)
-    films = db.relationship('Film', secondary=film_genre_association, back_populates='genres')
+    id = db.Column(db.Integer, primary_key=True, default=db.func.nextval('id_seq'))  # Primary key with PostgreSQL sequence
+    genre = db.Column(db.String(255), nullable=True)  # Genre name
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'genre': self.title
-        }
-
+    def __repr__(self):
+        return f'<{self.genre}>'

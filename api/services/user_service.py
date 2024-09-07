@@ -1,5 +1,8 @@
 from api.repositories.user_repository import UserRepository
 
+from api.repositories.user_repository import UserRepository
+from api.models.user import User
+
 class UserService:
 
     @staticmethod
@@ -7,16 +10,20 @@ class UserService:
         return UserRepository.get_all_users()
 
     @staticmethod
-    def get_user_by_id(user_id):
-        return UserRepository.get_user_by_id(user_id)
+    def get_user_by_profile_ref(profile_ref):
+        return UserRepository.get_user_by_profile_ref(profile_ref)
 
     @staticmethod
-    def create_user(username):
-        return UserRepository.create_user(username)
+    def create_user(user: User):
+        if not isinstance(user, User):
+            raise TypeError("Expected a User instance.")
+        return UserRepository.create_user(user)
 
     @staticmethod
-    def update_user(user_id, username=None):
-        return UserRepository.update_user(user_id, username)
+    def update_user(user: User):
+        if not isinstance(user, User):
+            raise TypeError("Expected a User instance.")
+        return UserRepository.update_user(user)
 
     @staticmethod
     def delete_user(user_id):
