@@ -24,3 +24,4 @@ class Genre(Resource):
         if genre:
             return genre
         api.abort(404)
+

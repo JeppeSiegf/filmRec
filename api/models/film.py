@@ -13,7 +13,7 @@ class Film(db.Model):
     id = db.Column(db.Integer, default=db.func.nextval('id_seq'), nullable=False)  # Auto-incrementing ID using PostgreSQL sequence
     title = db.Column(db.String(500))  # Film title
     total_watches = db.Column(db.Integer)  # Total watches count
-    last_update = db.Column(db.Date, nullable=False)  # Last update date
+    last_update = db.Column(db.Date)  # Last update date
     release_year = db.Column(db.Integer)  # Year of release
 
     # Relationship example if required

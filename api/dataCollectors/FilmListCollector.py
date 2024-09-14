@@ -56,7 +56,6 @@ class FilmListCollector:
         async with aiohttp.ClientSession() as session:
             while prev != curr:
                 page_url = f"{self.url}page/{page}/"
-                print(page_url)
                 async with semaphore:
                     movies = await self.fetch_movie_info(session, page_url)
                     movie_list.extend(movies)

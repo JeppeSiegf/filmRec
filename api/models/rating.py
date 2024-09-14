@@ -19,3 +19,4 @@ class Rating(db.Model):
 
     def __repr__(self):
         return f'<UserRating user={self.user_id}, film={self.film_id}, rating={self.rating}, liked={self.liked}>'
+

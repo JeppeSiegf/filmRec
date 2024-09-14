@@ -13,8 +13,14 @@ class FilmService:
 
     @staticmethod
     def create_film(film: Film):
+
         if not isinstance(film, Film):
             raise TypeError("Expected a Film instance.")
+
+        existing_film = FilmRepository.get_film_by_ref(film.page_ref)
+        if existing_film:
+            raise ValueError(f'{film.title}({film.title}) already exists.')
+
         return FilmRepository.create_film(film)
 
     @staticmethod
@@ -26,3 +32,8 @@ class FilmService:
     @staticmethod
     def delete_film(film_id):
         return FilmRepository.delete_film(film_id)
+
+
+    @staticmethod
+    def search_films(query: str):
+        return FilmRepository.search_films(query)

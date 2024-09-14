@@ -16,6 +16,10 @@ class FilmRepository:
         return Film.query.filter_by(page_ref=page_ref).first()
 
     @staticmethod
+    def search_films(query: str):
+        return Film.query.filter(Film.title.ilike(f"%{query}%")).limit(10).all()
+
+    @staticmethod
     def create_film(film):
         # film should be an instance of the Film class
         if not isinstance(film, Film):
@@ -75,7 +79,6 @@ class FilmRepository:
 
     # Adds many-to-many relation to db  used both by update and create
     @staticmethod
-
     def _update_film_genres( film, existing_film=None):
 
         if not isinstance(film, Film):
@@ -102,4 +105,5 @@ class FilmRepository:
         for field in required_fields:
             if getattr(film, field, None) is None:
                 raise ValueError(f"Film is missing required field: {field}")
+
 
