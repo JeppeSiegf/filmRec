@@ -1,8 +1,6 @@
-import asyncio
 
-import run
 from api import create_app
-from api.dataCollectors import FilmListCollector
+from api.dataCollectors import film_list_collector
 
 app = create_app()
 

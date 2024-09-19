@@ -1,5 +1,4 @@
 import requests
-import lxml
 from bs4 import BeautifulSoup
 from json import loads
 
@@ -18,6 +17,8 @@ class FilmDetailCollector:
         self.builder = "lxml"
         self.url = f"https://letterboxd.com/film/{film_ref}/"
         self.dom = self.get_parsed_page(self.url)
+
+
 
         self.total_watches = 0
         self.image_ref = None
@@ -74,7 +75,7 @@ class FilmDetailCollector:
             self.img_ref = None
 
 
-    # Actually returns amount of ratings rather than wathes
+    # Actually returns amount of ratings rather than watches
     # Suitable replacement for now
     def get_total_watches(self, dom) -> str:
 

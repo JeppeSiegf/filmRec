@@ -1,34 +1,24 @@
 import asyncio
-import re
 import aiohttp
 from bs4 import BeautifulSoup
-
-
-async def fetch_page(session, url):
-    headers = {
-        "referer": "https://letterboxd.com",
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-    }
-    async with session.get(url, headers=headers) as response:
-        return await response.text()
+import page_parser as parser
 
 
 class UserRatingsCollector:
-    def __init__(self, author) -> None:
-        if not author.isalnum():
+    def __init__(self, user) -> None:
+        if not user.isalnum():
             raise Exception("Invalid author")
-        self.user = author
-        self.url = f"https://letterboxd.com/{self.user}/films/"
+
+        self.url = f"https://letterboxd.com/{user}/films/"
+
+        self.user = user
         self.filmCount = None
         self.movies = []
 
-    async def get_parsed_page(self, session, url: str) -> BeautifulSoup:
-        page_content = await fetch_page(session, url)
-        return BeautifulSoup(page_content, 'html.parser')
 
-    async def fetch_movie_info(self, session, page_url):
+    async def fetch_ratings(self, session, page_url):
 
-        page = await self.get_parsed_page(session, page_url)
+        page = await parser.get_parsed_page(session, page_url)
 
         poster_containers = page.find_all("li", {"class": ["poster-container"], })
         if not poster_containers:
@@ -58,24 +48,24 @@ class UserRatingsCollector:
 
         return  watched_list
 
+    async def fetch_ratings_list(self):
 
-    async def film_count(self):
         page = 1
         movie_list = []
-        prev, curr = 0, 1
         concurrency = 100  # Adjust as per your system's capability
         semaphore = asyncio.Semaphore(concurrency)
 
         async with aiohttp.ClientSession() as session:
-            while prev != curr:
+            while True:
                 page_url = f"{self.url}page/{page}/"
-                print(page_url)
                 async with semaphore:
-                    movies = await self.fetch_movie_info(session, page_url)
-                    movie_list.extend(movies)
+                    movies = await self.fetch_ratings(session, page_url)
 
-                prev = curr
-                curr = len(movie_list)
+                # If no new movies are found, break the loop
+                if not movies:
+                    break
+
+                movie_list.extend(movies)
                 page += 1
 
         self.filmCount = len(movie_list)
@@ -84,4 +74,14 @@ class UserRatingsCollector:
         if self.filmCount == 0:
             raise Exception("No list exists")
 
+
+async def main():
+    collector = UserRatingsCollector('brendonyu668')
+    await collector.fetch_ratings_list()
+    movielist = collector.movies
+    print(movielist)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
 
