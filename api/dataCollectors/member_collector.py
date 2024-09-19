@@ -6,29 +6,6 @@ import page_parser as parser
 # Member is term used for a user who have logged a movie on the site -
 # Used here a way to gather both user and rating data in a convenient location
 # Also help to ensure that only data tied to existing film gets added to the db
-async def extract_rating(user_row) -> int:
-
-    rating = 0
-    rating_td = user_row.find_next_sibling("td")  # Assuming the rating is in the second <td>
-    if rating_td:
-        rating_span = rating_td.find("span", {"class": lambda x: x and x.startswith('rating rated-')})
-        if rating_span:
-            # Extract the last segment from the class name 'rated-X'
-            rating_classes = rating_span.get('class', [])
-            for cls in rating_classes:
-                if cls.startswith('rated-'):
-                    try:
-                        rating = int(cls.split('-')[-1])  # Extract the last segment which is the rating
-                        break
-                    except ValueError:
-                        rating = 0  # Default to zero if conversion fails
-        else:
-            rating = 0  # Default to zero if no rating found
-    else:
-        rating = 0  # Default to zero if no rating <td> found
-
-    return rating
-
 
 class MemberListCollector:
     def __init__(self, film_ref: str) -> None:
@@ -50,7 +27,7 @@ class MemberListCollector:
         async with aiohttp.ClientSession() as session:
             self.members = await parser.fetch_data(self.extract_member_info, self.url, session)
             self.filmCount = len(self.members)
-            self.split_member_list(self.members)
+            self.__split_member_list(self.members)
 
     async def extract_member_info(self, session, page_url):
         page = await parser.get_parsed_page(session, page_url)
@@ -69,13 +46,36 @@ class MemberListCollector:
             user_url.strip('/')
 
             # Extract the rating information
-            rating = await extract_rating(user_row)
-            like = await self.extract_like(user_row)
+            rating = await self.__extract_rating(user_row)
+            like = await self.__extract_like(user_row)
 
             member_list.append([user_name, user_url.strip('/'), rating, like])
         return member_list
 
-    async def extract_like(self, user_row) -> bool:
+    async def __extract_rating(self, user_row) -> int:
+
+        rating = 0
+        rating_td = user_row.find_next_sibling("td")  # Assuming the rating is in the second <td>
+        if rating_td:
+            rating_span = rating_td.find("span", {"class": lambda x: x and x.startswith('rating rated-')})
+            if rating_span:
+                # Extract the last segment from the class name 'rated-X'
+                rating_classes = rating_span.get('class', [])
+                for cls in rating_classes:
+                    if cls.startswith('rated-'):
+                        try:
+                            rating = int(cls.split('-')[-1])  # Extract the last segment which is the rating
+                            break
+                        except ValueError:
+                            rating = 0  # Default to zero if conversion fails
+            else:
+                rating = 0  # Default to zero if no rating found
+        else:
+            rating = 0  # Default to zero if no rating <td> found
+
+        return rating
+
+    async def __extract_like(self, user_row) -> bool:
         like = False
         like_icon_td = user_row.find_next_sibling("td")
 
@@ -88,7 +88,7 @@ class MemberListCollector:
 
         return like
 
-    def split_member_list(self, member_list):
+    def __split_member_list(self, member_list):
         self.users = [member[0:2] for member in member_list]
         self.ratings = [member[1:4] for member in member_list]
 
