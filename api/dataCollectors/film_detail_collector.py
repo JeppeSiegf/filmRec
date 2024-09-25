@@ -1,68 +1,72 @@
-import requests
-from bs4 import BeautifulSoup
+import asyncio
 from json import loads
+import aiohttp
+from api.dataCollectors.page_parser import PageParser
 
-class FilmDetailCollector:
+
+class FilmDetailCollector(PageParser):
     def __init__(self, film_ref: str) -> None:
         if not isinstance(film_ref, str):
             raise ValueError(f'Invalid film reference: {film_ref}')
 
         self.ref = film_ref
-
-        self.domain = 'https://letterboxd.com'
-        self.headers = {
-            "Referer": self.domain,
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        }
-        self.builder = "lxml"
         self.url = f"https://letterboxd.com/film/{film_ref}/"
-        self.dom = self.get_parsed_page(self.url)
+
+        self.dom = None
+        self.script = None
 
 
-
+        self.title = ''
+        self.release_year = 0
         self.total_watches = 0
-        self.image_ref = None
+        self.image_ref = ''
         self.genre = []
 
-    def get_parsed_page(self, url: str) -> BeautifulSoup:
-        print(f"Fetching URL: {url}")
-        try:
-            response = requests.get(url, headers=self.headers)
-            response.raise_for_status()  # Raises an HTTPError if the HTTP request returned an unsuccessful status code
-        except requests.RequestException as e:
-            raise RuntimeError(f"Error connecting to {url}: {e}")
+        self.director = {}
 
-        try:
-            dom = BeautifulSoup(response.text, self.builder)
-        except Exception as e:
-            raise RuntimeError(f"Error parsing response from {url}: {e}")
 
-        return dom
+    async def fetch_page_dom(self):
+        async with aiohttp.ClientSession() as session:
+            self.dom = await self.get_parsed_page(session, self.url)
 
-    # Example method to extract details (fill in with actual logic)
-    def extract_details(self):
-        # Placeholder for actual extraction logic
-        self.get_movie_genres(self.dom)
-        self.get_movie_poster(self.dom)
-
-    def get_movie_genres(self, dom) -> list:
-
-        genres_section  = dom.find(attrs={"id": ["tab-genres"]})
-        genres_header = genres_section.find("h3", string="Genres")
-        genre_div = genres_header.find_next_sibling("div", class_="text-sluglist")
-        genre_links = genre_div.find_all("a", class_="text-slug")
-
-        genres = []
-        for item in genre_links:
-            genres.append(item.text)
-
-        self.genre = genres
-
-    def get_movie_poster(self, dom) -> str:
+    async def fetch_page_script(self, dom):
+        if self.dom is None:
+            raise ValueError("DOM is not initialized. Call fetch_page_dom first.")
 
         script = dom.find("script", type="application/ld+json")
-        print(script)
         script = loads(script.text.split('*/')[1].split('/*')[0]) if script else None
+        return script
+
+    async def extract_details(self):
+        script = await self.fetch_page_script(self.dom)
+        if script:
+            await asyncio.gather(
+                self.get_title(self.dom),
+                self.get_release_year(self.dom,script),
+                self.get_film_genres(script),
+                self.get_movie_poster(script),
+                self.get_total_watches(script),
+                self.get_director(script)
+
+            )
+
+    async def get_title(self, dom) -> str:
+        elem = dom.find("h1", {"class": ["filmtitle"]})
+        elem = elem.text if elem else None
+        self.title = elem
+
+    async def get_film_genres(self, script):
+
+        if isinstance(script, dict) and 'genre' in script:
+            genres = script['genre']
+            # Ensure genres is a list of strings
+            if isinstance(genres, list):
+                for genre in genres:
+                    if isinstance(genre, str):
+                        # Append the genre to the genres list
+                        self.genre.append(genre)
+
+    async def get_movie_poster(self, script):
 
         # crop: list=(1500, 1000)
         # .replace('230-0-345', f'{crop[0]}-0-{crop[1]}')
@@ -70,27 +74,59 @@ class FilmDetailCollector:
         # .replace('230-0-345', f'{crop[0]}-0-{crop[1]}')
         if script:
             poster = script['image'] if 'image' in script else None
-            self.img_ref = poster.split('?')[0] if poster else None
+            self.image_ref = poster.split('?')[0] if poster else None
         else:
-            self.img_ref = None
-
+            self.image_ref = None
 
     # Actually returns amount of ratings rather than watches
     # Suitable replacement for now
-    def get_total_watches(self, dom) -> str:
-
-        script = dom.find("script", type="application/ld+json")
-        print(script)
-        script = loads(script.text.split('*/')[1].split('/*')[0]) if script else None
+    async def get_total_watches(self, script):
 
         if script:
             self.total_watches = script.get('aggregateRating', {}).get('ratingCount', None)
         else:
             self.total_watches = 0
 
+    async def get_director(self, script):
+
+        if isinstance(script, dict) and 'director' in script:
+            directors = script['director']
+
+            #
+            if isinstance(directors, list):
+                for director in directors:
+                    if '@type' in director and director['@type'] == 'Person':
+                        name = director.get('name', None)
+                        reference = director.get('sameAs', None)
+
+                        if name and reference:
+                            # Add to the dictionary with name as key and reference as value
+                            self.director[reference.split("/")[-2]] = name
+
+            # If no director or sameAs values found, set an empty list
+        if not self.director:
+            self.director = []
+
+    async def get_release_year(self, dom, script: dict = None) -> int:
+        elem = dom.find('div', {'class': 'releaseyear'})
+        year = elem.text if elem else None
+        try:
+            year = year if year else (
+                script['releasedEvent'][0]['startDate'] if script else None
+            )
+            self.release_year = int(year)
+        except (KeyError, ValueError):
+            self.release_year = None
 
 
 if __name__ == "__main__":
-    film = FilmDetailCollector('pulp-fiction')
-    film.get_total_watches(film.dom)
-    print(film.total_watches)
+    film = FilmDetailCollector('the-matrix')
+    # Note: We need to wait for the asynchronous initialization to complete
+    asyncio.run(film.fetch_page_dom())
+    asyncio.run(film.extract_details())
+    print(film.title)
+    print(film.release_year)
+    print(f"Total watches: {film.total_watches}")
+    print(f"Genres: {film.genre}")
+    print(f"Directors: {film.director}")
+

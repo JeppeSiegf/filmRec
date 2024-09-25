@@ -4,7 +4,6 @@ from api import db
 class Film(db.Model):
     __tablename__ = 'film'
 
-    # Reflecting the exact schema provided
     page_ref = db.Column(db.String(250), primary_key=True, nullable=False)  # Primary key - Film slug used on source site
     image_ref = db.Column(db.String(250))  # Optional image reference - Only added on later when more detail is added 
     id = db.Column(db.Integer, default=db.func.nextval('id_seq'), nullable=False)  # Auto-incrementing ID using PostgreSQL sequence
@@ -13,9 +12,9 @@ class Film(db.Model):
     last_update = db.Column(db.Date)  # Last update date
     release_year = db.Column(db.Integer)  # Year of release
 
-    # Relationship example if required
+    # Foreign Keys - Many to many
     genres = db.relationship('Genre', secondary='film_genre', backref=db.backref('films', lazy='dynamic'))
-
+    credits = db.relationship('Credit', back_populates='film')
 
     def __repr__(self):
         return f'<Film {self.title} ({self.release_year}) (page_ref={self.page_ref})>'

@@ -3,7 +3,7 @@ from api import db
 film_genre = db.Table(
     'film_genre',
     db.Column('genre_id', db.Integer, db.ForeignKey('genre.id'), primary_key=True),
-    db.Column('page_ref', db.String(250), db.ForeignKey('film.page_ref'), primary_key=True)
+    db.Column('film_id', db.String(250), db.ForeignKey('film.page_ref'), primary_key=True)
 )
 
 

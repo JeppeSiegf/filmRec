@@ -1,19 +1,19 @@
 import asyncio
 import aiohttp
-import page_parser as parser
+from api.dataCollectors.page_parser import PageParser
 
 
 # Member is term used for a user who have logged a movie on the site -
 # Used here a way to gather both user and rating data in a convenient location
 # Also help to ensure that only data tied to existing film gets added to the db
 
-class MemberListCollector:
+class MemberListCollector(PageParser):
     def __init__(self, film_ref: str) -> None:
         # look into better validation
         if not film_ref.isascii():
             raise Exception("Invalid reference")
 
-        self.url = f"https://letterboxd.com/film/{film_ref}/members/"
+        self.url = f"https://letterboxd.com/film/{film_ref}/members/by/popular/"
 
         self.film_ref = film_ref
 
@@ -25,12 +25,12 @@ class MemberListCollector:
 
     async def fetch_film_list(self):
         async with aiohttp.ClientSession() as session:
-            self.members = await parser.fetch_data(self.extract_member_info, self.url, session)
+            self.members = await self.fetch_data(self.extract_member_info, self.url, session)
             self.filmCount = len(self.members)
             self.__split_member_list(self.members)
 
     async def extract_member_info(self, session, page_url):
-        page = await parser.get_parsed_page(session, page_url)
+        page = await self.get_parsed_page(session, page_url)
         user_rows = page.find_all("td", {"class": "table-person"})
 
         member_list = []
@@ -96,7 +96,7 @@ class MemberListCollector:
 async def main():
     collector = MemberListCollector('maya-deren-take-zero')
     await collector.fetch_film_list()
-    user = collector.ratings
+    user = collector.members
     print(user)
 
 

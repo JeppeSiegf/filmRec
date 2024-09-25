@@ -28,7 +28,7 @@ class RatingRepository:
             film = Film(page_ref=film_id)  # Create with minimal fields
             db.session.add(film)
 
-        if rating is not None and (rating < 0 or rating > 5):
+        if rating is not None and (rating < 0 or rating > 10):
             raise ValueError("Rating must be between 0 and 5.")
 
         # Check if a rating already exists for this user and film

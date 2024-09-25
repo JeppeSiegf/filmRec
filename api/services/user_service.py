@@ -17,6 +17,12 @@ class UserService:
     def create_user(user: User):
         if not isinstance(user, User):
             raise TypeError("Expected a User instance.")
+
+        existing_film = UserRepository.get_user_by_profile_ref(user.profile_ref)
+        if existing_film:
+            print('already in db')
+            return None  # Raise an exception if the film does not exist
+
         return UserRepository.create_user(user)
 
     @staticmethod
