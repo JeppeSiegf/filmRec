@@ -32,12 +32,16 @@ class FilmService:
     def search_films(query: str):
         search_result = FilmRepository.search_films(query)
         for film in search_result:
-            print(film.title)
-
-            asyncio.run(FilmService.update_film(film.page_ref))
+            # print(film.title)
+            # asyncio.run(FilmService.update_film(film.page_ref))
             film.directors = CrewService.get_film_director(film.page_ref)
 
         return search_result
+
+    @staticmethod
+    def get_films_recs(top_films, limit=10):
+
+        return FilmRepository.get_films_recs(top_films, limit)
 
     @staticmethod
     def create_film(film: Film):
@@ -45,6 +49,7 @@ class FilmService:
             raise TypeError("Expected a Film instance.")
 
         existing_film = FilmRepository.get_film_by_ref(film.page_ref)
+
         if existing_film:
             raise ValueError(f'{film.title} already exists.')
 

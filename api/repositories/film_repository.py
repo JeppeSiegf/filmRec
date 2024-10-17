@@ -1,11 +1,11 @@
 from datetime import datetime
-
 from sqlalchemy import desc
 
 from api.models.crew import Crew
 from api.models.film import Film
 from api.models.genre import Genre, film_genre
 from api import db
+from api.models.rating import Rating
 
 
 def generate_page_ref(director_name):
@@ -32,6 +32,20 @@ class FilmRepository:
         films_query = films_query.order_by(desc(getattr(Film, 'total_watches')))
 
         return films_query.limit(10).all()
+
+    @staticmethod
+    def get_films_recs(top_films,limit = 10):
+
+        film_recs = (
+            Film.query
+            .join(top_films, Film.page_ref == top_films.c.page_ref)
+            .with_entities(Film.page_ref, Film.title, top_films.c.five_star_count)
+            .order_by(top_films.c.five_star_count.desc())
+            .limit(limit)
+            .all()
+        )
+
+        return film_recs
 
     @staticmethod
     def create_film(film):
@@ -109,3 +123,9 @@ class FilmRepository:
         for field in required_fields:
             if getattr(film, field, None) is None:
                 raise ValueError(f"Film is missing required field: {field}")
+
+
+
+
+
+

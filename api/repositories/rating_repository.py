@@ -1,3 +1,5 @@
+from sqlalchemy import func
+
 from api.models.rating import Rating
 from api.models.user import User
 from api.models.film import Film
@@ -13,6 +15,36 @@ class RatingRepository:
     @staticmethod
     def get_rating_by_user_and_film(user_id, film_id):
         return Rating.query.filter_by(user_id=user_id, film_id=film_id).first()
+
+    @staticmethod
+    def get_for_ratings_film(film_ref,rating = 10):
+        return (
+            Rating.query
+            .filter_by(film_id=film_ref, rating=rating)
+            .with_entities(Rating.user_id)
+            .subquery()  # Call subquery() on the entire query
+        )
+
+
+    @staticmethod
+    def get_films_rated_by_users(users, rating=10, limit=10):
+        top_films = (
+            Rating.query
+            .join(Film, Rating.film_id == Film.page_ref)
+            .with_entities(
+                Film.page_ref,
+                Film.title,
+                func.count(Rating.user_id).label('five_star_count')  # Add five_star_count here
+            )
+            .filter(Rating.rating == 10)
+            .group_by(Film.page_ref, Film.title)
+            .order_by(func.count(Rating.user_id).desc())
+            .limit(limit)
+            .subquery()  # Create a subquery from this
+        )
+        return top_films
+
+
 
     @staticmethod
     def create_rating(user_id, film_id, rating, liked, rating_date):

@@ -14,6 +14,14 @@ class RatingService:
         return RatingRepository.get_rating_by_user_and_film(user_id, film_id)
 
     @staticmethod
+    def get_for_ratings_film(film_ref, rating=10):
+        return RatingRepository.get_for_ratings_film(film_ref, rating)
+
+    @staticmethod
+    def get_films_rated_by_users(users, rating=10):
+        return RatingRepository.get_films_rated_by_users(users, rating)
+
+    @staticmethod
     def create_rating(rating: Rating):
         if not isinstance(rating, Rating):
             raise TypeError("Expected a Rating instance.")
