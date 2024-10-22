@@ -4,9 +4,7 @@ from page_parser import PageParser
 
 
 class UserRatingsCollector(PageParser):
-    def __init__(self, user) -> None:
-        if not user.isalnum():
-            raise Exception("Invalid author")
+    def __init__(self, user: str) -> None:
 
         self.url = f"https://letterboxd.com/{user}/films/"
 
@@ -36,15 +34,14 @@ class UserRatingsCollector(PageParser):
             poster = poster_container.div
             film_data = poster_container.find("img", {"class": "image"})
             film_slug = film_data.parent.get('data-film-slug', '')
-            poster_viewingdata = poster_container.find("p", {"class": "poster-viewingdata"})
-            print(poster_viewingdata)
+            rating_info = poster_container.find("p", {"class": "poster-viewingdata"})
             rating = None
             liked = False
 
-            if poster_viewingdata.span:
-                for span in poster_viewingdata.find_all("span"):
+            if rating_info.span:
+                for span in rating_info.find_all("span"):
                     if 'rating' in span['class']:
-                        rating = int(poster_viewingdata.span['class'][-1].split('-')[-1])
+                        rating = int(rating_info.span['class'][-1].split('-')[-1])
                         print(rating)
                     elif 'like' in span['class']:
                         liked = True
@@ -55,7 +52,7 @@ class UserRatingsCollector(PageParser):
 
 
 async def main():
-    collector = UserRatingsCollector('brendonyu668')
+    collector = UserRatingsCollector('filipe_furtado')
     await collector.fetch_ratings_list()
     movielist = collector.ratings
     print(movielist)

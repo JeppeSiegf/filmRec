@@ -1,13 +1,8 @@
-import asyncio
-from datetime import datetime, timedelta
 
-from api.repositories.film_repository import FilmRepository
+from datetime import datetime, timedelta
 from api.dataCollectors.film_detail_collector import FilmDetailCollector
 from api.models.film import Film
-
-from api.models.film import Film
-from api.dataCollectors.film_detail_collector import FilmDetailCollector  # Ensure correct import
-from api.repositories.film_repository import FilmRepository  # Ensure correct import
+from api.repositories.film_repository import FilmRepository
 from api.services.crew_service import CrewService
 
 
@@ -72,9 +67,9 @@ class FilmService:
         )
 
         film_service_instance = FilmService()
-        if film_service_instance.__is_time_to_update(existing_film.last_update, 30):
-            print('date')
-            needs_update = True
+        #if film_service_instance.__is_time_to_update(existing_film.last_update, 30):
+        #  print('date')
+        #    needs_update = True
 
 
         if not needs_update:
@@ -104,7 +99,8 @@ class FilmService:
         if 'genres' in updated_data:
             FilmRepository.update_film_genres(existing_film, updated_data['genres'])
 
-        if 'directors' in updated_data:
+        if 'directors' in updated_data and updated_data['directors']:
+
             for director_ref, director_name in updated_data['directors'].items():
                 CrewService.add_director_credit(existing_film.page_ref, director_name, director_ref)
 

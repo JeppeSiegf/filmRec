@@ -17,6 +17,8 @@ class MemberListCollector(PageParser):
 
         self.film_ref = film_ref
 
+
+
         self.filmCount = None
         self.members = []
 
@@ -30,8 +32,9 @@ class MemberListCollector(PageParser):
             self.__split_member_list(self.members)
 
     async def extract_member_info(self, session, page_url):
-        page = await self.get_parsed_page(session, page_url)
-        user_rows = page.find_all("td", {"class": "table-person"})
+
+        dom = await self.get_parsed_page(session, page_url)
+        user_rows = dom.find_all("td", {"class": "table-person"})
 
         member_list = []
 
@@ -93,11 +96,12 @@ class MemberListCollector(PageParser):
         self.ratings = [member[1:4] for member in member_list]
 
 
+
+
 async def main():
     collector = MemberListCollector('maya-deren-take-zero')
     await collector.fetch_film_list()
-    user = collector.members
-    print(user)
+    print(collector.script)
 
 
 if __name__ == "__main__":

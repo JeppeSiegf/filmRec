@@ -1,11 +1,8 @@
 from datetime import datetime
 from sqlalchemy import desc
-
-from api.models.crew import Crew
-from api.models.film import Film
-from api.models.genre import Genre, film_genre
 from api import db
-from api.models.rating import Rating
+from api.models.film import Film
+from api.models.genre import Genre
 
 
 def generate_page_ref(director_name):
