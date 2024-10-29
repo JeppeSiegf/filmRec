@@ -47,39 +47,34 @@ class RatingRepository:
 
 
     @staticmethod
-    def create_rating(user_id, film_id, rating, liked, rating_date):
+    def create_rating(rating: Rating):
         # Check if user exists, if not, create a new user
-        user = User.query.filter_by(profile_ref=user_id).first()
+        user = User.query.filter_by(profile_ref=rating.user_id).first()
         if not user:
-            user = User(profile_ref=user_id)  # Create with minimal fields
-            db.session.add(user)
+            print('no user')
+            return None
 
         # Check if film exists, if not, create a new film
-        film = Film.query.filter_by(page_ref=film_id).first()
+        film = Film.query.filter_by(page_ref=rating.film_id).first()
         if not film:
-            film = Film(page_ref=film_id)  # Create with minimal fields
-            db.session.add(film)
+            print('no film')
+            return None
 
-        if rating is not None and (rating < 0 or rating > 10):
+
+        if rating.rating is not None and (rating.rating < 0 or rating.rating > 10):
             raise ValueError("Rating must be between 0 and 5.")
 
         # Check if a rating already exists for this user and film
-        existing_rating = Rating.query.filter_by(user_id=user_id, film_id=film_id).first()
+        existing_rating = Rating.query.filter_by(user_id=rating.user_id, film_id=rating.film_id).first()
         if existing_rating:
+            print('already there')
             return None  # Or you might want to update the existing rating instead
 
         # Create and add new rating
-        new_rating = Rating(
-            user_id=user_id,
-            film_id=film_id,
-            rating=rating,
-            liked=liked,
-            rating_date=rating_date
-        )
 
-        db.session.add(new_rating)
+        db.session.add(rating)
         db.session.commit()
-        return new_rating
+        return rating
 
     @staticmethod
     def update_rating(rating):

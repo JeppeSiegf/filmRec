@@ -16,10 +16,10 @@ film_model = api.model('Film', {
 @api.route('/')
 class FilmList(Resource):
     @api.marshal_list_with(film_model)
-    @api.param('search_query', 'The search query to filter films by title or other attributes')
+    @api.param('film_ref', 'The Reference to film which the recomendation should be based on  ')
     def get(self):
-        """List all films or search for films"""
-        film_ref = request.args.get('search_query', '')  # Retrieve the query parameter
+
+        film_ref = request.args.get('film_ref', '')  # Retrieve the query parameter
         films = Film_Rec_Service.get_films_reccomendations(film_ref)  # Call the service method synchronously
         if films:
             return films

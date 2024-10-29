@@ -1,16 +1,24 @@
 from  api.services.rating_service import RatingService
-from api.services.film_service import FilmService
+from api.services.film_service import FilmRepository
+from api.repositories.film_rec_repository import RecommendationRepository
 
 class Film_Rec_Service:
 
     @staticmethod
-    def get_films_reccomendations(film_ref, rating = 10):
+    def get_films_reccomendations(film_ref):
 
-        subquery_users = RatingService.get_for_ratings_film(film_ref)
-        # Step 2: Count the number of 5-star ratings for films rated by those users
-        film_ratings_count = RatingService.get_films_rated_by_users(subquery_users)
+        is_in_db = FilmRepository.get_film_by_ref(film_ref)
+        if is_in_db is None:
+            print('not in db')
+            return None
 
-        # Step 3: Get the top 10 films based on 5-star ratings
-        top_films = FilmService.get_films_recs(film_ratings_count, limit=10)
+        film_recs = []
+        # topfilms = FilmRepository.get_similar_movies_based_on_distribution(film_ref)'
+        topfilms = RecommendationRepository.get_similar_films(film_ref)
+        for film in topfilms:
+            print(film)
 
-        return top_films
+            rec = FilmRepository.get_film_by_ref(film)
+            film_recs.append(rec)
+
+        return film_recs

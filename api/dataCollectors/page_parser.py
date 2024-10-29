@@ -43,8 +43,8 @@ class PageParser:
         semaphore = asyncio.Semaphore(concurrency)
 
         while prev_length != curr_length:
+
             page_url = f"{base_url}page/{page}/"
-            print(f"Fetching: {page_url}")
 
             async with semaphore:
                 try:
@@ -52,7 +52,6 @@ class PageParser:
                     if not data:
                         break  # Stop if no more data
                     data_list.extend(data)
-                    print(data_list)
                 except Exception as e:
                     print(f"Error fetching data from {page_url}: {e}")
                     break
@@ -68,6 +67,5 @@ class PageParser:
 
         cj = browser_cookie3.firefox(domain_name='letterboxd.com')
         cookie_dict = {cookie.name: cookie.value for cookie in cj}
-        print(cookie_dict)
         return cookie_dict
 

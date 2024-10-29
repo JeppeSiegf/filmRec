@@ -33,10 +33,6 @@ class FilmService:
 
         return search_result
 
-    @staticmethod
-    def get_films_recs(top_films, limit=10):
-
-        return FilmRepository.get_films_recs(top_films, limit)
 
     @staticmethod
     def create_film(film: Film):

@@ -1,6 +1,6 @@
 import asyncio
 import aiohttp
-from page_parser import PageParser
+from api.dataCollectors.page_parser import PageParser
 
 
 class UserRatingsCollector(PageParser):
@@ -42,7 +42,6 @@ class UserRatingsCollector(PageParser):
                 for span in rating_info.find_all("span"):
                     if 'rating' in span['class']:
                         rating = int(rating_info.span['class'][-1].split('-')[-1])
-                        print(rating)
                     elif 'like' in span['class']:
                         liked = True
 

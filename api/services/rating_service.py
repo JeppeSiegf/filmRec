@@ -25,7 +25,7 @@ class RatingService:
     def create_rating(rating: Rating):
         if not isinstance(rating, Rating):
             raise TypeError("Expected a Rating instance.")
-        return RatingRepository.create_rating(rating.user_id, rating.film_id, rating.rating, rating.liked, rating.rating_date)
+        return RatingRepository.create_rating(rating)
 
     @staticmethod
     def update_rating(rating: Rating):

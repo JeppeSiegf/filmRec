@@ -32,10 +32,10 @@ async def add_users():
                        last_updated=datetime.date.today()
                        )
         UserService.create_user(newuser)
+        await add_ratings_for_users(newuser.profile_ref)
 
 
-async def add_ratings_for_users():
-    user = ''
+async def add_ratings_for_users(user):
     collector = UserRatingsCollector(user)
     await collector.fetch_ratings_list()
     ratinglist = collector.ratings
@@ -43,7 +43,7 @@ async def add_ratings_for_users():
         newrate = Rating(
             user_id=rate[0],
             film_id=rate[1],
-            rating=rate>[2],
+            rating=rate[2],
             liked=rate[3],
             rating_date=datetime.date.today()
 
@@ -78,5 +78,5 @@ async def ratings_for_films():
 
 if __name__ == "__main__":
     with app.app_context():
-        asyncio.run(update_all_films())
+        asyncio.run(add_users())
 
