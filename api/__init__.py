@@ -1,13 +1,12 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_restx import Api
-from flask_cors import CORS
 from config import Config
 
 db = SQLAlchemy()
 api = Api(
     title='My Title',
-    version='1.0',
+    version='1.1',
     description='A description',
     # All API metadata
 )
@@ -17,7 +16,6 @@ def create_app():
 
     app = Flask(__name__)
     app.config.from_object(Config)
-    CORS(app)
     db.init_app(app)
     api.init_app(app)
 
