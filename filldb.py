@@ -11,7 +11,7 @@ from api.services.film_service import FilmService
 from api.services.user_service import UserService
 
 app = create_app()
-# Ad-hoc code for  initial manual db populating database
+# Ad-hoc code for initial manual db populating database
 async def update_all_films():
     count = 0
     films = FilmService.get_all_films()
