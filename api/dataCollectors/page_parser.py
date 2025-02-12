@@ -1,6 +1,5 @@
 import asyncio
 from json import loads
-
 from bs4 import BeautifulSoup
 
 

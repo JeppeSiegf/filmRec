@@ -1,6 +1,5 @@
 import asyncio
 import enum
-
 import aiohttp
 from api.dataCollectors.page_parser import PageParser
 
