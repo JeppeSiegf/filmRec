@@ -3,6 +3,7 @@ import testing.postgresql
 import psycopg2
 from faker import Faker
 import pytest
+from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from config import TestConfig
@@ -18,12 +19,14 @@ def postgresql():
 
 @pytest.fixture(scope="session")
 def test_app(postgresql):
+
     test_config = TestConfig()
     test_config.SQLALCHEMY_DATABASE_URI = postgresql.url()
 
     app = create_app(test_config)
 
     with app.app_context():
+        db = SQLAlchemy(app)
         db.create_all()
         yield app
         db.drop_all()
