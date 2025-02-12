@@ -21,7 +21,7 @@ async def update_all_films():
         await FilmService.update_film(film.page_ref)
         print(count)
         count += 1
-        logic *= 3
+        logic *= 9
 
 
 async def add_users():
