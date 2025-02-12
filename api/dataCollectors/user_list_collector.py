@@ -22,7 +22,7 @@ class UserListCollector(PageParser):
     async def fetch_user_list(self, url):
 
         try:
-            #cookies = await PageParser.get_cookies()
+
             async with aiohttp.ClientSession() as session:
                 self.users = await PageParser.fetch_data(url, session, self.fetch_page_data)
 

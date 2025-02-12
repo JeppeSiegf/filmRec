@@ -1,6 +1,6 @@
 import asyncio
 from json import loads
-import browser_cookie3
+
 from bs4 import BeautifulSoup
 
 
@@ -60,8 +60,3 @@ class PageParser:
 
 
 
-    @staticmethod
-    async def get_cookies():
-        cj = browser_cookie3.firefox(domain_name='letterboxd.com')
-        cookie_dict = {cookie.name: cookie.value for cookie in cj}
-        return cookie_dict
