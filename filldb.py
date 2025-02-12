@@ -13,6 +13,7 @@ from api.services.user_service import UserService
 app = create_app()
 # Ad-hoc code for initial manual db populating database oo
 async def update_all_films():
+    logic = 9
     count = 0
     films = FilmService.get_all_films()
     print('done')
@@ -20,6 +21,7 @@ async def update_all_films():
         await FilmService.update_film(film.page_ref)
         print(count)
         count += 1
+        logic *= 3
 
 
 async def add_users():
