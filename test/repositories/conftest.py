@@ -18,10 +18,10 @@ def postgresql():
 
 @pytest.fixture(scope="session")
 def test_app(postgresql):
-    app = create_app()
-    app.config["SQLALCHEMY_DATABASE_URI"] = postgresql.url()
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["TESTING"] = True
+    test_config = TestConfig()
+    test_config.SQLALCHEMY_DATABASE_URI = postgresql.url()
+
+    app = create_app(test_config)
 
     with app.app_context():
         db.create_all()
