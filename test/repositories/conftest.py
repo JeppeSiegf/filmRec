@@ -1,4 +1,7 @@
 from datetime import datetime
+import testing.postgresql
+import psycopg2
+from faker import Faker
 import pytest
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
@@ -8,13 +11,22 @@ from api.models import User
 from api.models.film import Film
 from api.models.genre import Genre
 
+@pytest.fixture(scope="session")
+def postgresql():
+    with testing.postgresql.Postgresql() as postgresql:
+        yield postgresql
 
 @pytest.fixture(scope="session")
-def test_app():
+def test_app(postgresql):
+    app = create_app()
+    app.config["SQLALCHEMY_DATABASE_URI"] = postgresql.url()
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["TESTING"] = True
 
-    app = create_app(TestConfig)
     with app.app_context():
+        db.create_all()
         yield app
+        db.drop_all()
 
 
 
