@@ -1,9 +1,8 @@
 from datetime import datetime
-
 import pytest
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
-
+from config import TestConfig
 from api import db, create_app
 from api.models import User
 from api.models.film import Film
@@ -13,7 +12,7 @@ from api.models.genre import Genre
 @pytest.fixture(scope="session")
 def test_app():
     """Creates a test app context for database operations."""
-    app = create_app()
+    app = create_app(TestConfig)
     with app.app_context():  # Ensure all DB operations are inside the app context
         yield app
 
