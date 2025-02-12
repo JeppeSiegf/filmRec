@@ -12,7 +12,7 @@ from api.models.genre import Genre
 @pytest.fixture(scope="session")
 def test_app():
     """Creates a test app context for database operations."""
-    app = create_app(TestConfig)
+    app = create_app()
     with app.app_context():  # Ensure all DB operations are inside the app context
         yield app
 
