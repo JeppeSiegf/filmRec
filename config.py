@@ -8,6 +8,7 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.getenv('dbAddress')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-class TestConfig(Config):
-    SQLALCHEMY_DATABASE_URI = "sqlite:///test.db"
+class TestConfig:
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
     TESTING = True

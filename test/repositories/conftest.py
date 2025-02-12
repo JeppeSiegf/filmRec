@@ -11,18 +11,23 @@ from api.models.genre import Genre
 
 @pytest.fixture(scope="session")
 def test_app():
-    """Creates a test app context for database operations."""
+
     app = create_app()
-    with app.app_context():  # Ensure all DB operations are inside the app context
+
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["TESTING"] = True
+
+    with app.app_context():
         yield app
 
 
 
 @pytest.fixture(scope="function")
 def test_db(test_app):
-    """Creates an isolated test database for each test."""
+
     with test_app.app_context():
-        db.session.begin_nested()  # Start a nested transaction
+        db.session.begin_nested()
         yield db
         db.session.rollback()
 
@@ -32,7 +37,7 @@ def test_db(test_app):
 
 @pytest.fixture
 def test_film(test_db):
-    """Provides a reusable test film and ensures cleanup after each test."""
+
     film = Film(
         title="Test Film",
         page_ref="test123",
