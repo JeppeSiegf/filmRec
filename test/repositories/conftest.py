@@ -12,12 +12,7 @@ from api.models.genre import Genre
 @pytest.fixture(scope="session")
 def test_app():
 
-    app = create_app()
-
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["TESTING"] = True
-
+    app = create_app(TestConfig)
     with app.app_context():
         yield app
 
