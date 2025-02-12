@@ -1,49 +1,53 @@
-from api.models.user import User
+from sqlalchemy.exc import SQLAlchemyError
 from api import db
+from api.models import User
 
 
 class UserRepository:
+    @classmethod
+    def create_user(cls, user):
+        try:
+            db.session.add(user)
+            db.session.commit()
+            return user
+        except SQLAlchemyError:
+            db.session.rollback()
+            return None
 
-    @staticmethod
-    def get_all_users():
-        return User.query.all()
+    @classmethod
+    def update_user(cls, profile_ref, update_data):
+        try:
+            user = cls.get_user_by_profile_ref(profile_ref)
+            if not user:
+                return None
 
-    @staticmethod
-    def get_user_by_profile_ref(profile_ref):
-        return User.query.filter_by(profile_ref=profile_ref).first()
+            for key, value in update_data.items():
+                setattr(user, key, value)
 
-    @staticmethod
-    def create_user(user):
-        if not isinstance(user, User):
-            raise TypeError("Expected a User instance.")
+            db.session.commit()
+            return user
+        except SQLAlchemyError:
+            db.session.rollback()
+            return None
 
-        if not user.profile_ref:
-            raise ValueError("User must have a profile_ref.")
+    @classmethod
+    def delete_user(cls, profile_ref):
+        try:
+            user = cls.get_user_by_profile_ref(profile_ref)
+            if not user:
+                return False
 
-        db.session.add(user)
-        db.session.commit()
-        return user
-
-    @staticmethod
-    def update_user(user):
-
-        if not isinstance(user, User):
-            raise TypeError("Expected a User instance.")
-
-        existing_user = User.query.filter_by(profile_ref=user.profile_ref).first()
-
-        if not existing_user:
-            return None  # Return if the user with the given profile_ref is not found
-
-        existing_user.username = user.username
-        existing_user.last_updated = user.last_updated
-
-        db.session.commit()
-        return existing_user
-
-    @staticmethod
-    def delete_user(profile_ref):
-        user = User.query.filter_by(profile_ref=profile_ref).first()
-        if user:
             db.session.delete(user)
             db.session.commit()
+            return True
+        except SQLAlchemyError:
+            db.session.rollback()
+            return False
+
+    @classmethod
+    def get_user_by_profile_ref(cls, profile_ref):
+        return db.session.query(User).filter_by(profile_ref=profile_ref).first()
+
+    @classmethod
+    def get_all_users(cls):
+        return db.session.query(User).all()

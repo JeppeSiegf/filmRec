@@ -22,16 +22,18 @@ def create_app():
     api.init_app(app)
 
     with app.app_context():
+        from api.models import Film, Credit, Genre, Crew, Role
+
         # Import and register your namespaces
         from api.controllers.genre_controller import api as genre_ns
         from api.controllers.film_controller import api as film_ns
         from api.controllers.user_controller import api as user_ns
-        from api.controllers.film_rec_controller import api as rec_ns
+        # from api.controllers.film_rec_controller import api as rec_ns
 
         api.add_namespace(genre_ns, path='/api/genres')
         api.add_namespace(film_ns, path='/api/films')
         api.add_namespace(user_ns, path='/api/users')
-        api.add_namespace(rec_ns, path='/api/recommendation')
+        # api.add_namespace(rec_ns, path='/api/recommendation')
 
         # Create tables
         db.create_all()

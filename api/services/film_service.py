@@ -4,6 +4,7 @@ from api.dataCollectors.film_detail_collector import FilmDetailCollector
 from api.models.film import Film
 from api.repositories.film_repository import FilmRepository
 from api.services.crew_service import CrewService
+from api.services.genre_service import GenreService
 
 
 class FilmService:
@@ -11,25 +12,25 @@ class FilmService:
     @staticmethod
     def get_all_films():
         films = FilmRepository.get_all_films()
-        # Append directors to each film
+
         for film in films:
-            film.directors = CrewService.get_film_director(film.page_ref)  # Assuming page_ref is unique
+
+            film.directors = CrewService.get_film_director(film.page_ref)
+            film.genres = GenreService.get_genres_for_film(film.page_ref)
+
         return films
 
     @staticmethod
     def get_film_by_page_ref(page_ref):
+
         film = FilmRepository.get_film_by_ref(page_ref)
-        if film:
-            film.directors = CrewService.get_film_director(film.page_ref)  # Get directors for this specific film
+
         return film
 
     @staticmethod
     def search_films(query: str):
+
         search_result = FilmRepository.search_films(query)
-        for film in search_result:
-            # print(film.title)
-            # asyncio.run(FilmService.update_film(film.page_ref))
-            film.directors = CrewService.get_film_director(film.page_ref)
 
         return search_result
 

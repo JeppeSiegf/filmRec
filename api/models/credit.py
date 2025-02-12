@@ -8,9 +8,9 @@ class Credit(db.Model):
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)  # Foreign key to Role
 
     # Relationships
-    film = db.relationship('Film', back_populates='credits')
-    crew = db.relationship('Crew', back_populates='credits')
-    role = db.relationship('Role', back_populates='credits')
+    film = db.relationship('Film', back_populates='credits', lazy='joined')
+    crew = db.relationship('Crew', back_populates='credits', lazy='joined')
+    role = db.relationship('Role', back_populates='credits', lazy='joined')
 
     def __repr__(self):
         return f'<Credit {self.film.title} - {self.crew.name} as {self.role.role}>'

@@ -1,0 +1,75 @@
+import pytest
+from api.dataCollectors.user_ratings_collector import UserRatingsCollector  # Adjust to your actual import path
+
+
+TEST_CASES = [
+    {
+        "user": "mscorsese",
+        "expected_status": "success",
+        "expected_ratings": 79,  # Example expected ratings (adjust based on actual data)
+    },
+    {
+        "user": "nonexistentuser123456",  # Invalid user
+        "expected_status": "fail",
+        "expected_ratings": 0,  # Expecting 0 ratings
+    }
+]
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("test_case", TEST_CASES)
+async def test_user_ratings_collector(test_case):
+    """Test UserRatingsCollector for fetching user ratings data"""
+    try:
+        pages_fetched = []
+
+        collector = UserRatingsCollector(test_case["user"])
+
+        # Override fetch_page_data to track pages
+        original_fetch = collector.fetch_page_data
+
+        async def tracked_fetch(session, page_url):
+            data = await original_fetch(session, page_url)
+            if data:
+                page_num = int(page_url.split('/')[-2]) if 'page' in page_url else 1
+                pages_fetched.append((page_num, len(data)))
+            return data
+
+        collector.fetch_page_data = tracked_fetch
+
+        # Fetch the data
+        await collector.fetch_ratings_list()
+
+        if test_case["expected_status"] == "success":
+            # Verify that ratings were fetched
+            min_page = collector.filmCount // 72
+            max_page = min_page + (1 if collector.filmCount % 72 != 0 else 0)
+
+            # Ensure that at least one page is fetched
+            assert len(pages_fetched) > 0, "Should fetch at least one page"
+
+            # Ensure that the number of pages fetched is within the expected range based on 72 movies per page
+            assert min_page <= len(pages_fetched) <= max_page, \
+                f"Pages fetched {len(pages_fetched)} is not in expected range ({min_page}, {max_page})"
+
+            # Check the structure and validity of each rating
+            for rating in collector.ratings:
+                user, film_slug, rating_value, liked = rating
+                assert isinstance(user, str) and user == test_case["user"]
+                assert isinstance(film_slug, str) and film_slug
+                assert ((isinstance(rating_value, int)
+                        and 1 <= rating_value <= 10)
+                        or rating_value is None)
+                assert isinstance(liked, bool)
+
+
+        elif test_case["expected_status"] == "fail":
+            # Ensure no ratings are fetched for invalid user
+            assert collector.filmCount == 0, "No ratings should be fetched for a non-existent user"
+            print(f"Expected failure, no ratings found for invalid user: {test_case['user']}")
+
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        if test_case["expected_status"] == "fail":
+            print(f"Expected failure: {e}")
+        else:
+            raise  # Re-raise unexpected exceptions

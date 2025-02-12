@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Date
 from api import db
 
 class User(db.Model):
-    __tablename__ = 'user'  # Remove quotes
+    __tablename__ = 'user'
 
     profile_ref = Column(String(250), primary_key=True, nullable=False)  # Primary key
     id = Column(Integer, default=db.func.nextval('id_seq'), nullable=False)  # Auto-incrementing ID

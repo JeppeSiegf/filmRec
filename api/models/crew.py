@@ -8,7 +8,7 @@ class Crew(db.Model):
     name = db.Column(db.String(500))  # Name of the crew member
 
     # Relationship with credits (many-to-many through Credit table)
-    credits = db.relationship('Credit', back_populates='crew')
+    credits = db.relationship('Credit', back_populates='crew',lazy='joined')
 
     def __repr__(self):
         return f'<Crew {self.name}>'

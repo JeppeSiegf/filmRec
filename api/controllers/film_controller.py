@@ -13,8 +13,10 @@ api = Namespace('films', description='Film operations')
 film_model = api.model('Film', {
     'page_ref': fields.String(required=True, description='Reference URL for the film'),
     'image_ref': fields.String(description='Image Reference URL for the film'),
+    'image_ref_large': fields.String(description='Higher quality image ref'),
     'title': fields.String(description='The film title'),
     'release_year': fields.Integer(description='Year of release'),
+    'genres' : fields.List(fields.String, description='List of genres'),
     'directors': fields.List(fields.String, description='List of director names'),
 
 })

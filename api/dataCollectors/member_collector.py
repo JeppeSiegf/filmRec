@@ -27,13 +27,13 @@ class MemberListCollector(PageParser):
 
     async def fetch_film_list(self):
         async with aiohttp.ClientSession() as session:
-            self.members = await self.fetch_data(self.extract_member_info, self.url, session)
+            self.members = await self.fetch_data(self.url, session, self.fetch_page_data)
             self.filmCount = len(self.members)
             self.__split_member_list(self.members)
 
-    async def extract_member_info(self, session, page_url):
+    async def fetch_page_data(self,session, page_url):
 
-        dom = await self.get_parsed_page(session, page_url)
+        dom = await PageParser.get_parsed_page(session, page_url)
         user_rows = dom.find_all("td", {"class": "table-person"})
 
         member_list = []
@@ -101,7 +101,7 @@ class MemberListCollector(PageParser):
 async def main():
     collector = MemberListCollector('maya-deren-take-zero')
     await collector.fetch_film_list()
-    print(collector.script)
+    print(collector.url)
 
 
 if __name__ == "__main__":

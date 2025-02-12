@@ -14,23 +14,31 @@ class ListTimeFilter(enum.Enum):
 
 
 class UserListCollector(PageParser):
-    def __init__(self, timescope: ListTimeFilter = ListTimeFilter.WEEK) -> None:
+    def __init__(self,) -> None:
 
-        self.url = f"https://letterboxd.com/members/popular/with/friends/this/{timescope.value}/"
         self.userCount = None
         self.users = []
 
-    async def fetch_user_list(self):
+    async def fetch_user_list(self, url):
         cookies = await PageParser.get_cookies()
-        async with aiohttp.ClientSession(cookies=cookies) as session:
-            self.users = await self.fetch_data(self.get_users, self.url, session)
+        try:
+            cookies = await PageParser.get_cookies()
+            async with aiohttp.ClientSession(cookies=cookies) as session:
+                self.users = await PageParser.fetch_data(url, session, self.fetch_page_data)
+
             self.userCount = len(self.users)
 
-        if self.userCount == 0:
-            raise Exception("No list exists")
+            if self.userCount == 0:
+                raise Exception(f"No users found for URL: {url}")
 
-    async def get_users(self, session, page_url):
-        dom = await self.get_parsed_page(session, page_url)
+        except Exception as e:
+            print(f"Error fetching user list from {url}: {e}")
+            raise  # Re-raise the exception to propagate it
+
+    @staticmethod
+    async def fetch_page_data(session, page_url):
+        dom = await PageParser.get_parsed_page(session, page_url)
+
 
         # TODO check for login or something
         logged_in = True
@@ -55,8 +63,9 @@ class UserListCollector(PageParser):
 
 async def main():
 
-    collector = UserListCollector(ListTimeFilter.WEEK)
-    await collector.fetch_user_list()
+    collector = UserListCollector()
+    await collector.fetch_user_list('https://letterboxd.com/mscorsese/following/')
+
     users_list = collector.users
     print(users_list)
 

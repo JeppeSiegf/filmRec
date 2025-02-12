@@ -3,6 +3,7 @@ from json import loads
 import browser_cookie3
 from bs4 import BeautifulSoup
 
+
 class PageParser:
     @staticmethod
     async def __fetch_page(session, url):
@@ -13,12 +14,13 @@ class PageParser:
         try:
             async with session.get(url, headers=headers) as response:
                 return await response.text()
+
         except Exception as e:
             raise RuntimeError(f"Error connecting to {url}: {e}")
 
     @staticmethod
     async def get_parsed_page(session, url: str, parser: str = "lxml"):
-        page_content = await PageParser.__fetch_page(session, url)  # Fixed the method call
+        page_content = await PageParser.__fetch_page(session, url)
         try:
             dom = BeautifulSoup(page_content, parser)
         except Exception as e:
@@ -26,15 +28,8 @@ class PageParser:
         return dom
 
     @staticmethod
-    async def fetch_page_script(dom):
-        if dom is None:
-            raise ValueError("DOM is not initialized. Call fetch_page_dom first.")
-        script = dom.find("script", type="application/ld+json")
-        script = loads(script.text.split('*/')[1].split('/*')[0]) if script else None
-        return script
-
-    @staticmethod
-    async def fetch_data(fetch_method, base_url, session):
+    async def fetch_data(base_url, session, fetch_page_data):
+        """Fetches data across paginated URLs using a specified page data extraction method."""
         page = 1
         data_list = []
         prev_length = 0
@@ -42,30 +37,31 @@ class PageParser:
         concurrency = 100  # Adjust based on system's capacity
         semaphore = asyncio.Semaphore(concurrency)
 
-        while prev_length != curr_length:
-
+        while True:
             page_url = f"{base_url}page/{page}/"
-
             async with semaphore:
                 try:
-                    data = await fetch_method(session, page_url)
+                    data = await fetch_page_data(session, page_url)  # Use the provided method
                     if not data:
-                        break  # Stop if no more data
+                        break  # Stop if no more data is returned (end of pagination)
                     data_list.extend(data)
+                    print(f"Fetched page {page} with {len(data)} items.")
                 except Exception as e:
                     print(f"Error fetching data from {page_url}: {e}")
                     break
 
             prev_length = curr_length
             curr_length = len(data_list)
+            if curr_length == prev_length:
+                break  # No new data, stop pagination
             page += 1
 
         return data_list
 
+
+
     @staticmethod
     async def get_cookies():
-
         cj = browser_cookie3.firefox(domain_name='letterboxd.com')
         cookie_dict = {cookie.name: cookie.value for cookie in cj}
         return cookie_dict
-

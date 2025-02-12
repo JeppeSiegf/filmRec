@@ -50,12 +50,14 @@ class RatingRepository:
     def create_rating(rating: Rating):
         # Check if user exists, if not, create a new user
         user = User.query.filter_by(profile_ref=rating.user_id).first()
+
         if not user:
             print('no user')
             return None
 
         # Check if film exists, if not, create a new film
         film = Film.query.filter_by(page_ref=rating.film_id).first()
+
         if not film:
             print('no film')
             return None

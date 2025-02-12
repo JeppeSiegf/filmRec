@@ -13,14 +13,20 @@ class UserRatingsCollector(PageParser):
         self.ratings = []
 
     async def fetch_ratings_list(self):
-        async with aiohttp.ClientSession() as session:
-            self.ratings = await self.fetch_data(self.extract_ratings, self.url, session)
+        try:
+            async with aiohttp.ClientSession() as session:
+                self.ratings = await self.fetch_data(self.url, session)
+
             self.filmCount = len(self.ratings)
 
-        if self.filmCount == 0:
-            raise Exception("No list exists")
+            if self.filmCount == 0:
+                raise Exception(f"No ratings found for URL: {self.url}")
 
-    async def extract_ratings(self, session, page_url):
+        except Exception as e:
+            print(f"Error fetching ratings list from {self.url}: {e}")
+            raise  # Re-raise the exception to propagate it further
+
+    async def fetch_page_data(self, session, page_url):
 
         page = await self.get_parsed_page(session, page_url)
 

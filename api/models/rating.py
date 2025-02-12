@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from api import db
 
 class Rating(db.Model):
-    __tablename__ = 'user_rating'  # Ensure this matches the actual table name
+    __tablename__ = 'user_rating'
 
     id = Column(Integer, primary_key=True, autoincrement=True)  # Primary key
     user_id = Column(String(250), ForeignKey('user.profile_ref'), nullable=False)  # User ID with ForeignKey

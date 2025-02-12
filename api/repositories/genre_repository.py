@@ -1,50 +1,73 @@
-from api.models.genre import Genre
+from sqlalchemy.exc import SQLAlchemyError
 from api import db
+from api.models.genre import Genre
+from api.models.film import Film
 
 
 class GenreRepository:
-
     @staticmethod
     def get_all_genres():
-        return Genre.query.all()
+        """Fetch all genres."""
+        try:
+            return Genre.query.all()
+        except SQLAlchemyError as e:
+            print(f"Database error: {e}")
+            return None
 
     @staticmethod
     def get_genre_by_id(genre_id):
-        return Genre.query.get(genre_id)
+        """Fetch a genre by its ID."""
+        try:
+            return Genre.query.get(genre_id)
+        except SQLAlchemyError as e:
+            print(f"Database error: {e}")
+            return None
 
     @staticmethod
-    def create_genre(genre):
-        if not isinstance(genre, Genre):
-            raise TypeError("Expected a Genre instance.")
-
-        if not genre.genre:
+    def create_genre(name):
+        """Create a new genre and save it to the database."""
+        if not name:
             raise ValueError("Genre must have a name.")
 
-        db.session.add(genre)
-        db.session.commit()
-        return genre
+        genre = Genre(genre=name)
+        try:
+            db.session.add(genre)
+            db.session.commit()
+            return genre
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            print(f"Database error: {e}")
+            return None
 
     @staticmethod
-    def update_genre(genre):
-        """
-        Instance method to update an existing genre instance.
-        """
-        if not isinstance(genre, Genre):
-            raise TypeError("Expected a Genre instance.")
+    def update_genre(genre_id, updates):
+        """Update an existing genre by applying changes from a dictionary."""
+        try:
+            genre = Genre.query.get(genre_id)
+            if not genre:
+                return None  # Gracefully handle missing genre
 
-        existing_genre = Genre.query.get(genre.id)
+            for key, value in updates.items():
+                setattr(genre, key, value)
 
-        if not existing_genre:
-            return None  # Return if the genre with the given ID is not found
-
-        existing_genre.genre = genre.genre
-
-        db.session.commit()
-        return existing_genre
+            db.session.commit()
+            return genre
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            print(f"Database error: {e}")
+            return None
 
     @staticmethod
     def delete_genre(genre_id):
-        genre = Genre.query.get(genre_id)
-        if genre:
-            db.session.delete(genre)
-            db.session.commit()
+        """Delete a genre by its ID."""
+        try:
+            genre = Genre.query.get(genre_id)
+            if genre:
+                db.session.delete(genre)
+                db.session.commit()
+                return True
+            return False  # Genre not found
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            print(f"Database error: {e}")
+            return None
