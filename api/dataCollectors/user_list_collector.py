@@ -10,7 +10,7 @@ class ListTimeFilter(enum.Enum):
     WEEK = 'week'
     MONTH = 'month'
     YEAR = 'year'
-    ALL = 'all-time'
+    ALL = 'alltime'
 
 
 class UserListCollector(PageParser):
@@ -23,7 +23,7 @@ class UserListCollector(PageParser):
 
         try:
             #cookies = await PageParser.get_cookies()
-            async with aiohttp.ClientSession(cookies=cookies) as session:
+            async with aiohttp.ClientSession() as session:
                 self.users = await PageParser.fetch_data(url, session, self.fetch_page_data)
 
             self.userCount = len(self.users)
