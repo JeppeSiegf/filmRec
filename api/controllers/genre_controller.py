@@ -12,7 +12,7 @@ genre_model = api.model('Genre', {
 class GenreList(Resource):
     @api.marshal_list_with(genre_model)
     def get(self):
-        """List all genres"""
+
         return GenreService.get_all_genres()
 
 

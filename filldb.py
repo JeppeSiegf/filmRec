@@ -56,7 +56,7 @@ async def ratings_for_films():
     collector = MemberListCollector(ref)
     await collector.fetch_film_list()
     ratinglist = collector.members
-    UserService.create_user(newuser)
+    # UserService.create_user(newuser)
 
 
 
