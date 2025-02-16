@@ -2,7 +2,6 @@ import pytest
 import asyncio
 from api.dataCollectors.member_collector import MemberListCollector  # Adjust the import based on your structure
 
-
 TEST_CASES = [
     {
         "film_ref": "maya-deren-take-zero",  # Use a valid film reference here
@@ -19,6 +18,7 @@ TEST_CASES = [
         "page_no": 1,
     }
 ]
+
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("test_case", TEST_CASES)
@@ -66,4 +66,3 @@ async def test_member_list_collector(test_case):
             assert isinstance(rating, (int, type(None))), f"Invalid rating {rating} for user {user}"
             # Validate like status is a boolean
             assert isinstance(like, bool), f"Invalid like status for user {user}"
-

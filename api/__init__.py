@@ -6,7 +6,7 @@ from config import Config
 db = SQLAlchemy()
 api = Api(
     title='My Title',
-    version='1.1',
+    version='1.2',
     description='A description',
     # All API metadata
 )
