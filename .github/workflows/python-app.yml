@@ -1,23 +1,41 @@
 name: Python application
+
 on:
   push:
     branches: [ "dev" ]
   pull_request:
     branches: [ "dev" ]
+
 permissions:
   contents: read
+
 jobs:
   build:
+
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        ports:
+          - 5432:5432  # Custom port for PostgreSQL to avoid conflicts
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_DB: film_test
+        options: --health-cmd="pg_isready -U postgres" --health-interval=10s --health-timeout=5s --health-retries=5
+
     steps:
     - uses: actions/checkout@v4
+
     - name: Set up Python 3.10
       uses: actions/setup-python@v3
       with:
         python-version: "3.10"
+
     - name: Create .env.test file
       run: |
-        echo "testDbAddress=${{ secrets.DB_TEST }}" > .env.test
+        echo "testDbAddress=postgresql://postgres:${{ secrets.DB_PASSWORD }}@localhost:5432/film_test" > .env.test
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -32,5 +50,3 @@ jobs:
     - name: Test with pytest
       run: |
         pytest --maxfail=1 --disable-warnings --tb=short
-
-this is current setup
