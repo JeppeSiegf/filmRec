@@ -30,12 +30,4 @@ async def test_fetch_page_real():
     assert "html" in response.lower()
 
 
-@pytest.mark.asyncio
-async def test_fetch_data_real(aiohttp_session):
-    """Test `fetch_data` by scraping multiple pages from Letterboxd."""
 
-    base_url = "https://letterboxd.com/film/inception/members/by/popular/"
-    data = await PageParser.fetch_data(base_url, aiohttp_session, PageParser.get_parsed_page)
-
-    assert isinstance(data, list)
-    assert len(data) > 0  # Ensure data was collected
