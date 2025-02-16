@@ -6,7 +6,7 @@ class Film(db.Model):
 
     page_ref = db.Column(db.String(250), primary_key=True, nullable=False)  # Primary key - Film slug used on source site
     image_ref = db.Column(db.String(250))  # Film poster reference
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)  # Auto-incrementing primary key  # Auto-incrementing ID using PostgreSQL sequence
+    id = db.Column(db.Integer, primary_key=False, autoincrement=True, nullable=False)  # Auto-incrementing primary key  # Auto-incrementing ID using PostgreSQL sequence
     title = db.Column(db.String(500))  # Film title
     total_watches = db.Column(db.Integer)  # Total watches count
     last_update = db.Column(db.Date)  # Last update date
