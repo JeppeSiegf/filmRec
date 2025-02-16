@@ -1,13 +1,24 @@
 from dotenv import load_dotenv
 import os
 
-# Load environment variables from the .env file
 load_dotenv()
-
 class Config:
+
+
+
     SQLALCHEMY_DATABASE_URI = os.getenv('dbAddress')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+
 class TestConfig(Config):
+
+    load_dotenv(".env.test", override=True)
+
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = None
+
+    # Use a separate test database - fall back to SQLite if not specified
+    SQLALCHEMY_DATABASE_URI = os.getenv('testDbAddress')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # Ensures each test starts with a clean database
+    CREATE_TEST_DATABASE = True

@@ -32,8 +32,10 @@ def create_app(config_class=Config):
         api.add_namespace(film_ns, path='/api/films')
         api.add_namespace(user_ns, path='/api/users')
         # api.add_namespace(rec_ns, path='/api/recommendation')
+    return app
 
-        # Create tables
+
+def create_db(app):
+    with app.app_context():
         db.create_all()
 
-    return app

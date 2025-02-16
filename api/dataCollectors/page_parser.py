@@ -1,7 +1,7 @@
 import asyncio
 from json import loads
 from bs4 import BeautifulSoup
-
+import abc
 
 class PageParser:
     @staticmethod
@@ -56,6 +56,13 @@ class PageParser:
             page += 1
 
         return data_list
+
+    @abc.abstractmethod
+    def fetch_page_data(session, page_url):
+
+            return []
+
+
 
 
 

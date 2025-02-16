@@ -1,53 +1,34 @@
 from datetime import datetime
-import testing.postgresql
-import psycopg2
-from faker import Faker
 import pytest
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
-from config import TestConfig
 from api import db, create_app
 from api.models import User
 from api.models.film import Film
 from api.models.genre import Genre
+from config import TestConfig
+
 
 @pytest.fixture(scope="session")
-def postgresql():
-    with testing.postgresql.Postgresql() as postgresql:
-        yield postgresql
-
-@pytest.fixture(scope="session")
-def test_app(postgresql):
-
-    test_config = TestConfig()
-    test_config.SQLALCHEMY_DATABASE_URI = postgresql.url()
-
-    app = create_app(test_config)
+def test_app():
+    # Use the TestConfig class directly, which already has the test database URI
+    app = create_app(TestConfig)
 
     with app.app_context():
-        db = SQLAlchemy(app)
         db.create_all()
         yield app
         db.drop_all()
 
 
-
 @pytest.fixture(scope="function")
 def test_db(test_app):
-
     with test_app.app_context():
         db.session.begin_nested()
         yield db
         db.session.rollback()
 
 
-
-
-
 @pytest.fixture
 def test_film(test_db):
-
     film = Film(
         title="Test Film",
         page_ref="test123",
@@ -57,26 +38,26 @@ def test_film(test_db):
         image_ref="poster.jpg",
         image_ref_large="poster_large.jpg"
     )
-    db.session.add(film)
-    db.session.commit()
+    test_db.session.add(film)
+    test_db.session.commit()
 
     yield film  # Provide the test film
 
     # Cleanup after test
-    db.session.delete(film)
-    db.session.commit()
+    test_db.session.delete(film)
+    test_db.session.commit()
+
 
 @pytest.fixture
 def test_genre(test_db):
     """Provides a test genre and ensures cleanup after each test."""
     genre = Genre(genre="Test Genre")
-    db.session.add(genre)
-    db.session.commit()
+    test_db.session.add(genre)
+    test_db.session.commit()
     yield genre
 
-    db.session.delete(genre)
-    db.session.commit()
-
+    test_db.session.delete(genre)
+    test_db.session.commit()
 
 
 @pytest.fixture
@@ -87,21 +68,19 @@ def test_user(test_db):
         profile_ref=f"test_user_{datetime.utcnow().timestamp()}",
         last_updated=datetime.utcnow().date()
     )
-    db.session.add(user)
-    db.session.commit()
+    test_db.session.add(user)
+    test_db.session.commit()
     yield user
 
     try:
-        db.session.delete(user)
-        db.session.commit()
+        test_db.session.delete(user)
+        test_db.session.commit()
     except:
-        db.session.rollback()
-
+        test_db.session.rollback()
 
 
 @pytest.fixture
 def mock_db_session(mocker):
-
     session_mock = mocker.patch.object(db, "session")
 
     session_mock.add.side_effect = SQLAlchemyError("Mocked DB error")
@@ -110,5 +89,3 @@ def mock_db_session(mocker):
     session_mock.delete.side_effect = SQLAlchemyError("Mocked DB error")
 
     return session_mock
-
-

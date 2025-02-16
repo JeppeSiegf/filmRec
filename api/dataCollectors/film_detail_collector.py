@@ -20,6 +20,7 @@ class FilmDetailCollector(PageParser):
         self.release_year = 0
         self.total_watches = 0
         self.image_ref = ''
+        self.image_ref_large = ''
         self.genre = []
 
         self.director = {}
