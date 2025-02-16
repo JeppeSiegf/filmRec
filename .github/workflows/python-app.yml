@@ -14,6 +14,17 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:13
+        ports:
+          - 5433:5432  # Custom port for PostgreSQL to avoid conflicts
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_DB: testdb
+        options: --health-cmd="pg_isready -U postgres" --health-interval=10s --health-timeout=5s --health-retries=5
+
     steps:
     - uses: actions/checkout@v4
 
@@ -24,7 +35,7 @@ jobs:
 
     - name: Create .env.test file
       run: |
-        echo "testDbAddress=${{ secrets.DB_TEST }}" > .env.test
+        echo "testDbAddress=postgresql://postgres:${{ secrets.DB_PASSWORD }}@localhost:5433/testdb" > .env.test
 
     - name: Install dependencies
       run: |
