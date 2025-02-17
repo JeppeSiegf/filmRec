@@ -47,8 +47,8 @@ jobs:
       with:
         context: .
         file: ./Dockerfile
-        cache-from: type=registry,ref=my-docker-cache:latest
-        cache-to: type=registry,ref=my-docker-cache:latest,mode=max
+        cache-from: type=gha,ref=trivy-python:latest
+        cache-to: type=gha,ref=trivy-python:latest,mode=max
         push: false  # Don't push image to DockerHub
 
     - name: Create .env.test file
