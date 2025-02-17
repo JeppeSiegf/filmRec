@@ -41,15 +41,13 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-
 
-    - name: Cache Docker image layers
-      id: docker-cache
-      uses: docker/build-push-action@v3
-      with:
-        context: .
-        file: ./Dockerfile
-        cache-from: type=gha,ref=trivy-python:latest
-        cache-to: type=gha,ref=trivy-python:latest,mode=max
-        push: false  # Don't push image to DockerHub
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Cache Docker image layers with Buildx
+      run: |
+        docker buildx build --load --cache-from=type=registry,ref=trivy-python:latest --cache-to=type=inline --file ./Dockerfile --tag trivy-python:latest .
 
     - name: Create .env.test file
       run: |
