@@ -2,16 +2,14 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
+
+
 class Config:
-
-
-
     SQLALCHEMY_DATABASE_URI = os.getenv('dbAddress')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 
 class TestConfig(Config):
-
     load_dotenv(".env.test", override=True)
 
     TESTING = True
@@ -22,3 +20,4 @@ class TestConfig(Config):
 
     # Ensures each test starts with a clean database
     CREATE_TEST_DATABASE = True
+
