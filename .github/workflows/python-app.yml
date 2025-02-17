@@ -41,14 +41,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-
 
-    - name: Set up Docker Buildx
-      id: buildx
-      uses: docker/setup-buildx-action@v2
-
-    - name: Build Docker image
-      run: |
-        docker buildx build --load --cache-from=type=registry,ref=trivy-python:latest --cache-to=type=inline --file Dockerfile --tag trivy-python:latest .
-
+   
     - name: Create .env.test file
       run: |
         echo "testDbAddress=postgresql://postgres:${{ secrets.DB_PASSWORD }}@localhost:5432/film_test" > .env.test
