@@ -41,6 +41,16 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-
 
+    - name: Cache Docker image layers
+      id: docker-cache
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        file: ./Dockerfile
+        cache-from: type=registry,ref=my-docker-cache:latest
+        cache-to: type=registry,ref=my-docker-cache:latest,mode=max
+        push: false  # Don't push image to DockerHub
+
     - name: Create .env.test file
       run: |
         echo "testDbAddress=postgresql://postgres:${{ secrets.DB_PASSWORD }}@localhost:5432/film_test" > .env.test
