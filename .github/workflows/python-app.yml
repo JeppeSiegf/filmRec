@@ -45,9 +45,10 @@ jobs:
       id: buildx
       uses: docker/setup-buildx-action@v2
 
-    - name: Cache Docker image layers with Buildx
+    - name: Cache Docker layers for Postgres image
       run: |
-        docker buildx build --load --cache-from=type=registry,ref=trivy-python:latest --cache-to=type=inline --file ./Dockerfile --tag trivy-python:latest .
+        docker pull postgres:13  # Ensure the latest Postgres image is cached in the build
+        docker buildx build --load --cache-from=type=registry,ref=postgres:13 --cache-to=type=inline --tag postgres:13 .
    
     - name: Create .env.test file
       run: |
