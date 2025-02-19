@@ -15,7 +15,6 @@ class FilmDetailCollector(PageParser):
         self.dom = None
         self.script = None
 
-
         self.title = ''
         self.release_year = 0
         self.total_watches = 0
@@ -25,13 +24,10 @@ class FilmDetailCollector(PageParser):
 
         self.director = {}
 
-
     async def fetch_page(self):
         async with aiohttp.ClientSession() as session:
             result = await self.get_parsed_page(session, self.url)
-            self.dom = result[0]
-            self.script = result[1]
-
+            self.dom = result
 
     async def fetch_page_script(self, dom):
         if self.dom is None:
@@ -46,7 +42,7 @@ class FilmDetailCollector(PageParser):
         if script:
             await asyncio.gather(
                 self.get_title(self.dom),
-                self.get_release_year(self.dom,script),
+                self.get_release_year(self.dom, script),
                 self.get_film_genres(script),
                 self.get_movie_poster(script),
                 self.get_total_watches(script),
@@ -54,7 +50,7 @@ class FilmDetailCollector(PageParser):
 
             )
 
-    async def get_title(self, dom) -> str:
+    async def get_title(self, dom):
         elem = dom.find("h1", {"class": ["filmtitle"]})
         elem = elem.text if elem else None
         self.title = elem
@@ -111,7 +107,7 @@ class FilmDetailCollector(PageParser):
         if not self.director:
             self.director = []
 
-    async def get_release_year(self, dom, script: dict = None) -> int:
+    async def get_release_year(self, dom, script: dict = None):
         elem = dom.find('div', {'class': 'releaseyear'})
         year = elem.text if elem else None
         try:
@@ -124,7 +120,7 @@ class FilmDetailCollector(PageParser):
 
 
 if __name__ == "__main__":
-    film = FilmDetailCollector('the-matrix')
+    film = FilmDetailCollector('the-godfather')
     # Note: We need to wait for the asynchronous initialization to complete
     asyncio.run(film.fetch_page())
     asyncio.run(film.extract_details())
@@ -133,4 +129,3 @@ if __name__ == "__main__":
     print(f"Total watches: {film.total_watches}")
     print(f"Genres: {film.genre}")
     print(f"Directors: {film.director}")
-

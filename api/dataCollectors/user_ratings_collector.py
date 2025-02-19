@@ -1,30 +1,25 @@
 import asyncio
-import aiohttp
-from api.dataCollectors.page_parser import PageParser
+from typing import List
+
+from api.dataCollectors.list_collector import ListCollector
+from api.dataCollectors.sort_categories import ReleaseDateFilter, GenreFilter, FilmSorting
+import time
 
 
-class UserRatingsCollector(PageParser):
+class UserRatingsCollector(ListCollector):
     def __init__(self, user: str) -> None:
-
+        super().__init__()
         self.url = f"https://letterboxd.com/{user}/films/"
-
         self.user = user
-        self.filmCount = None
-        self.ratings = []
 
-    async def fetch_ratings_list(self):
-        try:
-            async with aiohttp.ClientSession() as session:
-                self.ratings = await self.fetch_data(self.url, session)
-
-            self.filmCount = len(self.ratings)
-
-            if self.filmCount == 0:
-                raise Exception(f"No ratings found for URL: {self.url}")
-
-        except Exception as e:
-            print(f"Error fetching ratings list from {self.url}: {e}")
-            raise  # Re-raise the exception to propagate it further
+    async def fetch_ratings_list(self, decade: ReleaseDateFilter = None, genres: List[GenreFilter] = [], order: FilmSorting = None):
+        if decade is not None:
+            ReleaseDateFilter.filter(self.url, decade)
+        if len(genres) > 0:
+            GenreFilter.filter(self.url, genres)
+        if order is not None:
+            FilmSorting.sort(self.url, order)
+        await self.fetch_list()
 
     async def fetch_page_data(self, session, page_url):
 
@@ -56,10 +51,15 @@ class UserRatingsCollector(PageParser):
         return watched_list
 
 
+
+
 async def main():
-    collector = UserRatingsCollector('filipe_furtado')
-    await collector.fetch_ratings_list()
-    movielist = collector.ratings
+    start_time = time.perf_counter()
+    collector = UserRatingsCollector('headeditor')
+    await collector.fetch_ratings_list(None, [], FilmSorting.RANDOM)
+    elapsed_time = time.perf_counter() - start_time  # End timer
+    print(f"Total execution time: {elapsed_time:.2f}s")
+    movielist = collector.url
     print(movielist)
 
 

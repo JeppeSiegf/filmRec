@@ -26,43 +26,6 @@ class PageParser:
             raise RuntimeError(f"Error parsing response from {url}: {e}")
         return dom
 
-    @staticmethod
-    async def fetch_data(base_url, session, fetch_page_data):
-        """Fetches data across paginated URLs using a specified page data extraction method."""
-        page = 1
-        data_list = []
-        prev_length = 0
-        curr_length = 1
-        concurrency = 100  # Adjust based on system's capacity
-        semaphore = asyncio.Semaphore(concurrency)
-
-        while True:
-            page_url = f"{base_url}page/{page}/"
-            async with semaphore:
-                try:
-                    data = await fetch_page_data(session, page_url)  # Use the provided method
-                    if not data:
-                        break  # Stop if no more data is returned (end of pagination)
-                    data_list.extend(data)
-                    print(f"Fetched page {page} with {len(data)} items.")
-                except Exception as e:
-                    print(f"Error fetching data from {page_url}: {e}")
-                    break
-
-            prev_length = curr_length
-            curr_length = len(data_list)
-            if curr_length == prev_length:
-                break  # No new data, stop pagination
-            page += 1
-
-        return data_list
-
-    @abc.abstractmethod
-    def fetch_page_data(session, page_url):
-
-            return []
-
-
 
 
 

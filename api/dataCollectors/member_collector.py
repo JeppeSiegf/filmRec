@@ -1,39 +1,34 @@
 import asyncio
+from typing import Union, Tuple
+
 import aiohttp
-from api.dataCollectors.page_parser import PageParser
+from api.dataCollectors.list_collector import ListCollector
+from api.dataCollectors.sort_categories import RatingRangeFilter,SingleRatingFilter,UserSorting
 
 
 # Member is term used for a user who have logged a movie on the site -
 # Used here a way to gather both user and rating data in a convenient location
 # Also help to ensure that only data tied to existing film gets added to the db
 
-class MemberListCollector(PageParser):
+class MemberListCollector(ListCollector):
     def __init__(self, film_ref: str) -> None:
-        # look into better validation
-        if not film_ref.isascii():
-            raise Exception("Invalid reference")
-
-        self.url = f"https://letterboxd.com/film/{film_ref}/members/by/popular/"
-
+        super().__init__()
+        self.url = f"https://letterboxd.com/film/{film_ref}/members/"
         self.film_ref = film_ref
 
-
-
-        self.filmCount = None
-        self.members = []
-
-        self.users = []
-        self.ratings = []
-
-    async def fetch_film_list(self):
-        async with aiohttp.ClientSession() as session:
-            self.members = await self.fetch_data(self.url, session, self.fetch_page_data)
-            self.filmCount = len(self.members)
-            self.__split_member_list(self.members)
+    async def fetch_member_list(self, ratings: Union[SingleRatingFilter, Tuple[RatingRangeFilter, RatingRangeFilter]] = None, order: UserSorting = None ):
+        if ratings is not None:
+            if isinstance(ratings, tuple):
+                self.url = RatingRangeFilter.filter(self.url, ratings)
+            elif isinstance(ratings, SingleRatingFilter):
+                self.url = SingleRatingFilter.filter(self.url, ratings)
+        if order is not None:
+            self.url = UserSorting.sort(self.url,order)
+        await self.fetch_list()
 
     async def fetch_page_data(self,session, page_url):
 
-        dom = await PageParser.get_parsed_page(session, page_url)
+        dom = await self.get_parsed_page(session, page_url)
         user_rows = dom.find_all("td", {"class": "table-person"})
 
         member_list = []
@@ -100,8 +95,9 @@ class MemberListCollector(PageParser):
 
 async def main():
     collector = MemberListCollector('maya-deren-take-zero')
-    await collector.fetch_film_list()
-    print(collector.url)
+    await collector.fetch_member_list(ratings=SingleRatingFilter.NO_STARS,order=UserSorting.ALPHABETIC)
+    print(collector.items)
+    print(len(collector.items))
 
 
 if __name__ == "__main__":

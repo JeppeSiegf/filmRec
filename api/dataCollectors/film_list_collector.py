@@ -1,30 +1,30 @@
 import asyncio
+from typing import List
+
 import aiohttp
-from api.dataCollectors.page_parser import PageParser
+from api.dataCollectors.list_collector import ListCollector
+from api.dataCollectors.sort_categories import ReleaseDateFilter,GenreFilter,FilmSorting
 
 
-class FilmListCollector(PageParser):  # Inherit from PageParser
+class FilmListCollector(ListCollector):
     def __init__(self, user: str, title: str) -> None:
         super().__init__()
-        if not user.isalnum():
-            raise ValueError("Invalid user")
-
         self.url = f"https://letterboxd.com/{user}/list/{title}/detail/"
-        self.filmCount = None
-        self.movies = []
 
-    async def fetch_film_list(self):
-        async with aiohttp.ClientSession() as session:
-            self.movies = await PageParser.fetch_data(self.url, session, self.fetch_page_data)
-            self.filmCount = len(self.movies)
+    async def fetch_film_list(self, decade: ReleaseDateFilter = None,
+                                genres: List[GenreFilter] = [],
+                                 order: FilmSorting = None):
+        if decade is not None:
+            ReleaseDateFilter.filter(self.url, decade)
+        if len(genres) > 0:
+            GenreFilter.filter(self.url, genres)
+        if order is not None:
+            self.url = FilmSorting.sort(self.url, order)
+        await self.fetch_list()
 
-        if self.filmCount == 0:
-            raise Exception("No list exists")
+    async def fetch_page_data(self,session, page_url,):
 
-    @staticmethod
-    async def fetch_page_data(session, page_url):
-
-        page = await PageParser.get_parsed_page(session, page_url)
+        page = await self.get_parsed_page(session, page_url)
         img = page.find("ul", {"class": ["js-list-entries", "poster-list", "-p125", "-grid", "film-list"]})
         if not img:
             return []
@@ -46,9 +46,10 @@ class FilmListCollector(PageParser):  # Inherit from PageParser
 # Usage example
 async def main():
     collector = FilmListCollector('brthrash', 'directors')
-    await collector.fetch_film_list()
-    movielist = collector.movies
+    await collector.fetch_film_list(order=FilmSorting.RELEASE_DATE)
+    movielist = collector.url
     print(movielist)
 
 # Run the main function to start the async process
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())

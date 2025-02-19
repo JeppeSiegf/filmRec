@@ -1,43 +1,32 @@
 import asyncio
 import enum
 import aiohttp
-from api.dataCollectors.page_parser import PageParser
+from api.dataCollectors.list_collector import ListCollector
+from sort_categories import TimePeriodSort,UserSorting
 
 
-# TODO move to parser
-class ListTimeFilter(enum.Enum):
-    WEEK = 'week'
-    MONTH = 'month'
-    YEAR = 'year'
-    ALL = 'alltime'
+class UserListCollector(ListCollector):
+    def __init__(self, user: str = None) -> None:
+        super().__init__()
+        if user is None:
+            self.url = 'https://letterboxd.com/members/popular/'
+            self.user = None
+        else:
+            self.url = f"https://letterboxd.com/{user}/following/"
+            self.user = user
+
+    async def fetch_users_list(self, timespan: TimePeriodSort = None, order : UserSorting = None ):
+        if self.user is None:
+            if timespan is not None:
+                self.url = TimePeriodSort.sort(self.url,timespan)
+        else:
+            if order is not None:
+                self.url = UserSorting.sort(self.url,order)
+        await self.fetch_list()
 
 
-class UserListCollector(PageParser):
-    def __init__(self,) -> None:
-
-        self.userCount = None
-        self.users = []
-
-    async def fetch_user_list(self, url):
-
-        try:
-
-            async with aiohttp.ClientSession() as session:
-                self.users = await PageParser.fetch_data(url, session, self.fetch_page_data)
-
-            self.userCount = len(self.users)
-
-            if self.userCount == 0:
-                raise Exception(f"No users found for URL: {url}")
-
-        except Exception as e:
-            print(f"Error fetching user list from {url}: {e}")
-            raise  # Re-raise the exception to propagate it
-
-    @staticmethod
-    async def fetch_page_data(session, page_url):
-        dom = await PageParser.get_parsed_page(session, page_url)
-
+    async def fetch_page_data(self, session, page_url):
+        dom = await self.get_parsed_page(session, page_url)
 
         # TODO check for login or something
         logged_in = True
@@ -63,9 +52,10 @@ class UserListCollector(PageParser):
 async def main():
 
     collector = UserListCollector()
-    await collector.fetch_user_list('https://letterboxd.com/mscorsese/following/')
 
-    users_list = collector.users
+    await collector.fetch_users_list(timespan = TimePeriodSort.WEEK)
+
+    users_list = collector.items
     print(users_list)
 
 
