@@ -4,10 +4,9 @@ from bs4 import BeautifulSoup
 
 from api.dataCollectors.page_parser import PageParser
 
+
 @pytest.mark.asyncio
-
 async def test_real_get_parsed_page():
-
     url = "https://letterboxd.com/films/"
 
     async with aiohttp.ClientSession() as session:
@@ -28,6 +27,3 @@ async def test_fetch_page_real():
 
     assert response is not None
     assert "html" in response.lower()
-
-
-

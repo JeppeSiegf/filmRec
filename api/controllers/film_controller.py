@@ -2,6 +2,8 @@ import asyncio
 from datetime import datetime
 from flask_restx import Namespace, Resource, fields
 from flask import request
+
+from api.controllers.api_models import film_model, film_model_simple
 from api.controllers.genre_controller import Genre
 from api.dataCollectors.film_detail_collector import FilmDetailCollector
 from api.services.film_service import FilmService
@@ -9,21 +11,13 @@ from api.models.film import Film
 
 api = Namespace('films', description='Film operations')
 
-#  Film model schema
-film_model = api.model('Film', {
-    'page_ref': fields.String(required=True, description='Reference URL for the film'),
-    'image_ref': fields.String(description='Image Reference URL for the film'),
-    'image_ref_large': fields.String(description='Higher quality image ref'),
-    'title': fields.String(description='The film title'),
-    'release_year': fields.Integer(description='Year of release'),
-    'genres' : fields.List(fields.String, description='List of genres'),
-    'directors': fields.List(fields.String, description='List of director names'),
 
-})
+#  Film model schema
+
 
 @api.route('/')
 class FilmList(Resource):
-    @api.marshal_list_with(film_model)
+    @api.marshal_list_with(film_model_simple)
     @api.param('search_query', 'The search query to filter films by title or other attributes')
     def get(self):
         """List all films or search for films"""
@@ -45,11 +39,34 @@ class FilmList(Resource):
             image_ref=data.get('image_ref'),
             title=data.get('title'),
             total_watches=data.get('total_watches', 0),
-            last_update=datetime.now()
+            last_update=datetime.utcnow()
         )
         created_film = FilmService.create_film(film)  # Call the service method synchronously
         return created_film, 201
 
+
+@api.route('/by')
+class FilmByDirector(Resource):
+    @api.marshal_with(film_model)
+    @api.param('director_ref', 'The reference of the director to filter films by')
+    def get(self):
+        """"Fetch films by director reference"""
+        dir_ref = request.args.get('director_ref', '')
+        film = FilmService.get_films_by_crew_member(dir_ref)
+        if film:
+            return film
+        api.abort(404, "Film not found")
+
+@api.route('/latest')
+@api.response(404, 'Film not found')
+class FilmResource(Resource):
+    @api.marshal_with(film_model_simple)
+    def get(self):
+        """Fetch a film given its reference"""
+        film = FilmService.get_newest_film()  # Call the service method synchronously
+        if film:
+            return film
+        api.abort(404, "Film not found")
 @api.route('/<string:page_ref>')
 @api.response(404, 'Film not found')
 @api.param('page_ref', 'The film reference')

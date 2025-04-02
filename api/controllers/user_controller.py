@@ -10,6 +10,7 @@ user_model = api.model('User', {
     'last_update': fields.DateTime(description='The date when the user was last updated')
 })
 
+
 @api.route('/')
 class UserList(Resource):
     @api.marshal_list_with(user_model)
@@ -23,6 +24,7 @@ class UserList(Resource):
         """Create a new user"""
         data = request.json
         return UserService.create_user(data['username']), 201
+
 
 @api.route('/<int:id>')
 @api.response(404, 'User not found')

@@ -3,7 +3,7 @@ from typing import Union, Tuple
 
 import aiohttp
 from api.dataCollectors.list_collector import ListCollector
-from api.dataCollectors.sort_categories import RatingRangeFilter,SingleRatingFilter,UserSorting
+from api.dataCollectors.sort_categories import RatingRangeFilter, SingleRatingFilter, UserSorting
 
 
 # Member is term used for a user who have logged a movie on the site -
@@ -14,19 +14,24 @@ class MemberListCollector(ListCollector):
     def __init__(self, film_ref: str) -> None:
         super().__init__()
         self.url = f"https://letterboxd.com/film/{film_ref}/members/"
-        self.film_ref = film_ref
+        self.entries_per_page = 25
+        self.users = []
+        self.ratings = []
 
-    async def fetch_member_list(self, ratings: Union[SingleRatingFilter, Tuple[RatingRangeFilter, RatingRangeFilter]] = None, order: UserSorting = None ):
+    async def fetch_member_list(self, ratings: Union[SingleRatingFilter,
+                                Tuple[RatingRangeFilter, RatingRangeFilter]] = None,
+                                order: UserSorting = None):
+
         if ratings is not None:
             if isinstance(ratings, tuple):
                 self.url = RatingRangeFilter.filter(self.url, ratings)
             elif isinstance(ratings, SingleRatingFilter):
                 self.url = SingleRatingFilter.filter(self.url, ratings)
         if order is not None:
-            self.url = UserSorting.sort(self.url,order)
+            self.url = UserSorting.sort(self.url, order)
         await self.fetch_list()
 
-    async def fetch_page_data(self,session, page_url):
+    async def fetch_page_data(self, session, page_url):
 
         dom = await self.get_parsed_page(session, page_url)
         user_rows = dom.find_all("td", {"class": "table-person"})
@@ -57,7 +62,6 @@ class MemberListCollector(ListCollector):
         if rating_td:
             rating_span = rating_td.find("span", {"class": lambda x: x and x.startswith('rating rated-')})
             if rating_span:
-                # Extract the last segment from the class name 'rated-X'
                 rating_classes = rating_span.get('class', [])
                 for cls in rating_classes:
                     if cls.startswith('rated-'):
@@ -65,11 +69,7 @@ class MemberListCollector(ListCollector):
                             rating = int(cls.split('-')[-1])  # Extract the last segment which is the rating
                             break
                         except ValueError:
-                            rating = 0  # Default to zero if conversion fails
-            else:
-                rating = 0  # Default to zero if no rating found
-        else:
-            rating = 0  # Default to zero if no rating <td> found
+                            rating = 0
 
         return rating
 
@@ -91,11 +91,9 @@ class MemberListCollector(ListCollector):
         self.ratings = [member[1:4] for member in member_list]
 
 
-
-
 async def main():
     collector = MemberListCollector('maya-deren-take-zero')
-    await collector.fetch_member_list(ratings=SingleRatingFilter.NO_STARS,order=UserSorting.ALPHABETIC)
+    await collector.fetch_member_list(ratings=SingleRatingFilter.NO_STARS, order=UserSorting.ALPHABETIC)
     print(collector.items)
     print(len(collector.items))
 

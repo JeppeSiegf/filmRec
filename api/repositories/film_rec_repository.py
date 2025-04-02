@@ -51,4 +51,3 @@ class RecommendationService:
         recommended_film_ids = [film_id for film_id, _ in predictions[:limit]]
 
         return recommended_film_ids
-

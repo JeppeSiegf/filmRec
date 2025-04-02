@@ -1,7 +1,18 @@
-
+import asyncio
+import os
+import time
+import traceback
+import urllib.parse
 from datetime import datetime, timedelta
+
+import aiohttp
+from sqlalchemy.orm.attributes import flag_modified
+
+from api import create_app, db
 from api.dataCollectors.film_detail_collector import FilmDetailCollector
+from api.models import Genre
 from api.models.film import Film
+from api.models.language import Language
 from api.repositories.film_repository import FilmRepository
 from api.services.crew_service import CrewService
 from api.services.genre_service import GenreService
@@ -11,13 +22,8 @@ class FilmService:
 
     @staticmethod
     def get_all_films():
+
         films = FilmRepository.get_all_films()
-
-        for film in films:
-
-            film.directors = CrewService.get_film_director(film.page_ref)
-            film.genres = GenreService.get_genres_for_film(film.page_ref)
-
         return films
 
     @staticmethod
@@ -28,80 +34,121 @@ class FilmService:
         return film
 
     @staticmethod
+    def get_newest_film():
+
+        film = FilmRepository.get_newest_film()
+        return film
+
+    @staticmethod
     def search_films(query: str):
 
         search_result = FilmRepository.search_films(query)
-
+        for result in search_result:
+            result.image_ref_large = FilmService.proxify_image_url(result.image_ref_large)
         return search_result
 
+    from datetime import datetime
+
 
     @staticmethod
-    def create_film(film: Film):
-        if not isinstance(film, Film):
-            raise TypeError("Expected a Film instance.")
+    async def create_multiple_films(film_tuples):
+        """
+        Takes a list of tuples, maps them to the correct structure, and inserts them in bulk.
+        Ensures that the first film's timestamp is the newest.
+        """
+        if not isinstance(film_tuples, list):
+            raise TypeError("Expected a list of tuples.")
 
-        existing_film = FilmRepository.get_film_by_ref(film.page_ref)
+        film_data = [Film.map_film_simple(film_tuple) for film_tuple in film_tuples]
 
-        if existing_film:
-            raise ValueError(f'{film.title} already exists.')
+        # Step 2: Filter out None values (invalid mappings)
+        film_data = [film for film in film_data if film is not None]
 
-        return FilmRepository.create_film(film)
+        if not film_data:
+            print("No valid films to insert.")
+            return []
+
+        # Step 3: Ensure first film gets the newest timestamp
+
+
+        # Step 4: Send to repository for bulk insert
+        inserted_films = FilmRepository.bulk_insert_films(film_data)
+        print(film_data[0]['page_ref'])
+        await FilmService.update_film(film_data[0]['page_ref'],True)
+        return inserted_films
 
     @staticmethod
-    async def update_film(page_ref):
-        # Step 1: Retrieve the existing film
-        print('trigger')
-        existing_film = FilmRepository.get_film_by_ref(page_ref)
+    async def update_film(page_ref: str, timestamp=False):
+        """
+        Update a film with data collected from an external source.
+        Uses a single session for all database operations.
+        """
+        try:
+            # Get the film first to check if it exists
+            existing_film = Film.query.filter_by(page_ref=page_ref).first()
+            if not existing_film:
+                print(f"Film {page_ref} not found.")
+                return None
 
-        if not existing_film:
-            print('not in db')
-            return None  # Raise an exception if the film does not exist
+            # Fetch updated data via HTTP and extraction (async)
+            collector = FilmDetailCollector(page_ref)
+            await collector.fetch_page()
+            await collector.extract_details()
 
-        needs_update = False
-        needs_update = any(
-            getattr(existing_film, attr) in (None, 0)
-            for attr in ['title', 'image_ref', 'total_watches', 'release_year', 'genres']
-        )
+            print("Extracted description:", collector.description)
 
-        film_service_instance = FilmService()
-        #if film_service_instance.__is_time_to_update(existing_film.last_update, 30):
-        #  print('date')
-        #    needs_update = True
+            # Map the collected details into a dictionary
+            updated_attributes = Film.map_film_detailed(collector)
+            print("Mapped description:", updated_attributes.get('description'))
 
+            # Update the film in the DB using the existing FilmRepository method,
+            # but make sure it uses the same session
+            updated_film = FilmRepository.update_film(page_ref, updated_attributes)
 
-        if not needs_update:
-            print('no need for update')
-            return existing_film  # No need to update
+            if not updated_film:
+                return None
 
-        updated_info = FilmDetailCollector(page_ref)
-        await updated_info.fetch_page_dom()  # Await the asynchronous call
-        await updated_info.fetch_page_script(updated_info.dom)  # Await the asynchronous call
-        await updated_info.extract_details()  # Await the asynchronous call
+            # If timestamp flag is False, update related entities
+            # Using the same session as the updated film
+            if not timestamp:
+                if updated_attributes.get('genres'):
+                    FilmRepository.update_film_genres(updated_film, updated_attributes['genres'])
 
-        updated_data = {
-            'title': updated_info.title,  # Assuming title is fetched in extract_details
-            'image_ref': updated_info.image_ref,
-            'total_watches': updated_info.total_watches,
-            'release_year': updated_info.release_year,
-            'genres': updated_info.genre,  # Assuming genres are already in the correct format
-            'directors': updated_info.director,
+                if updated_attributes.get('languages'):
+                    FilmRepository.update_film_languages(updated_film, updated_attributes['languages'])
 
-        }
-        print(updated_data)
-        # Step 2: Update the film's attributes
+                if updated_attributes.get('crew'):
+                    CrewService.add_film_credits_bulk(
+                        film_ref=updated_film.page_ref,
+                        crew_data=updated_attributes['crew']
+                    )
 
-        FilmRepository.update_film(existing_film, updated_data)
+                if updated_attributes.get('cast'):
+                    CrewService.add_film_credits_bulk(
+                        film_ref=updated_film.page_ref,
+                        crew_data=updated_attributes['cast']
+                    )
 
-        # Step 3: Update the genres if provided
-        if 'genres' in updated_data:
-            FilmRepository.update_film_genres(existing_film, updated_data['genres'])
+            return updated_film
 
-        if 'directors' in updated_data and updated_data['directors']:
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error updating film {page_ref}: {str(e)}")
+            traceback.print_exc()
+            return None
 
-            for director_ref, director_name in updated_data['directors'].items():
-                CrewService.add_director_credit(existing_film.page_ref, director_name, director_ref)
+    @staticmethod
+    async def update_multiple_films(film_refs: list[str]):
+        """
+        Update multiple films using a shared HTTP session.
+        """
+        await FilmDetailCollector.enable_shared_session()
 
-        return existing_film  # Return the updated film object
+        try:
+            for film_ref in film_refs:
+                await FilmService.update_film(film_ref)
+        finally:
+            await FilmDetailCollector.disable_shared_session()
 
     def __is_time_to_update(self, last_update: datetime.date, days: int):
         update_time = False
@@ -120,4 +167,52 @@ class FilmService:
     def delete_film(film_id):
         return FilmRepository.delete_film(film_id)
 
+    @staticmethod
+    @staticmethod
+    def get_films_by_crew_member(crew_ref: str):
+        # Fetch the credits associated with the crew member
+        film_credits = CrewService.get_credits_by_crew_ref(crew_ref)
 
+        # Extract film ids and roles
+        film_ids = [credit.film_id for credit in film_credits]
+        roles = {credit.film_id: [] for credit in film_credits}
+
+        # Map each film_id to its corresponding roles
+        for credit in film_credits:
+            roles[credit.film_id].append(credit.role.role)
+
+        # Fetch films by their ids
+        films = FilmRepository.get_films_by_refs(film_ids)
+
+        # Assign the list of roles to each film
+        for film in films:
+            film.roles = roles.get(film.page_ref, [])
+
+        return films
+
+    @staticmethod
+    def filter_invalid_refs(film_refs):
+        return FilmRepository.filter_invalid_refs(film_refs)
+
+    @staticmethod
+    def proxify_image_url(original_url: str) -> str:
+        api_base = os.getenv("API_BASE_URL", "http://localhost:5000")  # adjust as needed
+        encoded_url = urllib.parse.quote(original_url, safe='')
+        return f"{api_base}/api/proxy/image?url={encoded_url}"
+
+    @staticmethod
+    def proxy_test():
+        result = FilmService.search_films('barbi')
+        for resu in result:
+            print(resu.image_ref_large)
+
+
+if __name__ == "__main__":
+    import logging
+    from sqlalchemy import event
+    from sqlalchemy.engine import Engine
+
+    app = create_app()
+    with app.app_context():
+       
+        asyncio.run(FilmService.proxy_test())

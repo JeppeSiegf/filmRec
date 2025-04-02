@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Union, Tuple
 
 
 class FilmSorting(Enum):
@@ -8,7 +7,7 @@ class FilmSorting(Enum):
     POPULARITY = 'popular'
     RANDOM = 'shuffle'
     LAST_ADDITION = 'added'
-    FIRST_LAST_ADDITION = 'added-earliest'
+    FIRST_ADDITION = 'added-earliest'
     RELEASE_DATE = 'release'
     RELEASE_DATE_REVERSE = 'release-earliest'
     HIGHEST_RATING = 'rating'
@@ -21,6 +20,22 @@ class FilmSorting(Enum):
         url += f'by/{order.value}/'
         return url
 
+class RatingSorting(Enum):
+    REVERSE = 'release-earliest'
+    ALPHABETIC = 'name'
+    POPULARITY = 'popular'
+    RANDOM = 'shuffle'
+    LAST_ADDITION = 'date'
+    FIRST_ADDITION = 'date-earliest'
+    HIGHEST_RATING = 'rating'
+    LOWEST_RATING = 'rating_lowest'
+    SHORTEST = 'shortest'
+    LONGEST = 'longest'
+
+    @staticmethod
+    def sort(url, order):
+        url += f'by/{order.value}/'
+        return url
 
 
 class UserSorting(Enum):
@@ -32,7 +47,6 @@ class UserSorting(Enum):
     def sort(url, order):
         url += f'by/{order.value}/'
         return url
-
 
 
 class GenreFilter(Enum):
@@ -85,12 +99,11 @@ class ReleaseDateFilter(Enum):
     DECADE_1880S = '1880s'
     DECADE_1870S = '1870s'
     UPCOMING = 'upcoming'
+
     @staticmethod
     def filter(url, decade):
         url += f'decade/{decade.value}/'
         return url
-
-
 
 
 class TimePeriodSort(Enum):
@@ -105,7 +118,6 @@ class TimePeriodSort(Enum):
 
 
 class RatingRangeFilter(Enum):
-
     HALF_A_STAR = '.5'
     ONE_STAR = '1'
     ONE_AND_HALF_STAR = '1.5'
@@ -141,7 +153,3 @@ class SingleRatingFilter(Enum):
     def filter(url, rating):
         url += f'rated/{rating.value}/'
         return url
-
-
-
-

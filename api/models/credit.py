@@ -1,4 +1,6 @@
 from api import db
+
+
 class Credit(db.Model):
     __tablename__ = 'credit'
 

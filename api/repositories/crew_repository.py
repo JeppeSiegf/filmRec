@@ -1,3 +1,5 @@
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.dialects.postgresql import insert
 from api.models.credit import Credit
 from api.models.role import Role
 from api.models.crew import Crew
@@ -20,41 +22,31 @@ class CrewRepository:
         return query.all()
 
     @staticmethod
+    def get_credits_by_crew_ref(crew_ref: str) -> list[str]:
+        return Credit.query.filter_by(crew_id=crew_ref).all()
+
     def get_crew_by_ref(crew_ref):
         return Crew.query.filter_by(page_ref=crew_ref).first()
 
     @staticmethod
     def get_role_ref_by_name(role_title: str):
-        role = Role.query.filter_by(role=role_title).first()
-        return role.id
+        return Role.query.filter_by(role=role_title).first()
+
+
+    @staticmethod
+    def get_role_name_by_ref(role_ref: str):
+
+        return Role.query.filter_by(id=role_ref).first()
 
     @staticmethod
     def get_credit(film_ref, crew_ref, role_id):
         return Credit.query.filter_by(film_id=film_ref, crew_id=crew_ref, role_id=role_id).first()
+
     @staticmethod
     def get_film_director(film_ref):
-        # Fetch the director role
-        director_role = Role.query.filter_by(role="director").first()
-
-        if not director_role:
-            return None  # Return None if the 'Director' role is not found
-
-        # Query the Credit table to filter by film_id and role_id for 'Director'
-        credits = Credit.query.filter_by(film_id=film_ref, role_id=director_role.id).all()
-
-        # Get the director IDs from the credits
-        director_ids = [credit.crew_id for credit in credits]
-
-        if not director_ids:
-            return []  # Return an empty list if no directors are found
-
-        # Query the Crew table to get director names by their IDs
-        directors = Crew.query.filter(Crew.id.in_(director_ids)).all()
-
-        # Return the director names
-        return [director.name for director in directors]
-
-
+        return [c.name for c in Crew.query.join(Credit).join(Role).filter(
+            Credit.film_id == film_ref, Role.role == "director", Credit.role_id == Role.id
+        ).all()]
 
     @staticmethod
     def create_crew_member(crew):
@@ -67,6 +59,34 @@ class CrewRepository:
         db.session.add(crew)
         db.session.commit()
         return crew
+
+    @staticmethod
+    def update_film_roles(roles):
+        try:
+
+            existing_roles = {r.role: r for r in Role.query.filter(Role.role.in_(roles)).all()}
+            missing_roles = [role_name for role_name in roles if role_name not in existing_roles]
+
+            new_role_objs = []
+            for role_name in missing_roles:
+                new_role = Role(role=role_name)
+                db.session.add(new_role)
+                new_role_objs.append(new_role)
+
+            if new_role_objs:
+                db.session.flush()
+                for r in new_role_objs:
+                    existing_roles[r.role] = r
+
+            result_roles = [existing_roles[role_name] for role_name in roles]
+
+            db.session.commit()
+            return result_roles
+
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            print(f"Database error: {e}")
+            return None
 
     @staticmethod
     def add_film_credit(credit):
@@ -86,7 +106,7 @@ class CrewRepository:
         if not isinstance(crew, crew):
             raise TypeError("Expected a Genre instance.")
 
-        existing_crew = Crew.query.get(crew.id)
+        existing_crew = Crew.query.get(crew.page_ref)
 
         if not existing_crew:
             return None  # Return if the genre with the given ID is not found
@@ -102,3 +122,68 @@ class CrewRepository:
         if crew:
             db.session.delete(crew)
             db.session.commit()
+
+
+    @staticmethod
+    def bulk_create_crew(crew_data):
+        """Bulk inserts new crew members, ignoring duplicates using ON CONFLICT DO NOTHING."""
+        if crew_data:
+            stmt = insert(Crew).values(crew_data)
+            # Assuming 'page_ref' is defined as UNIQUE in Crew.
+            stmt = stmt.on_conflict_do_nothing(index_elements=['page_ref'])
+            try:
+                db.session.execute(stmt)
+                db.session.commit()
+            except SQLAlchemyError as e:
+                (print('crew'))
+                db.session.rollback()
+                raise e
+
+    @staticmethod
+    def bulk_create_roles(roles_data):
+        """Bulk inserts new roles, ignoring duplicates using ON CONFLICT DO NOTHING."""
+        if roles_data:
+            stmt = insert(Role).values(roles_data)
+            # Assuming 'role' is defined as UNIQUE in Role.
+            stmt = stmt.on_conflict_do_nothing(index_elements=['id'])
+            try:
+                db.session.execute(stmt)
+                db.session.commit()
+            except SQLAlchemyError as e:
+                db.session.rollback()
+                raise e
+
+    @staticmethod
+    def bulk_create_credits(credits_data):
+        """Bulk inserts new credits, ensuring no duplicates using ON CONFLICT DO NOTHING."""
+        if credits_data:
+            stmt = insert(Credit).values(credits_data)
+            # Assuming the combination of (film_id, crew_id, role_id) is UNIQUE in Credit.
+            stmt = stmt.on_conflict_do_nothing(index_elements=["film_id", "crew_id", "role_id"])
+            try:
+                db.session.execute(stmt)
+                db.session.commit()
+
+            except SQLAlchemyError as e:
+                (print('credit'))
+                db.session.rollback()
+                raise e
+
+    @staticmethod
+    def get_existing_crew(crew_refs):
+        """Fetches existing crew members by page_ref."""
+        return Crew.query.filter(Crew.page_ref.in_(crew_refs)).all()
+
+    @staticmethod
+    def get_existing_roles(role_names):
+        """Fetches existing roles by name."""
+        return Role.query.filter(Role.role.in_(role_names)).all()
+
+    @staticmethod
+    def get_existing_credits(film_id, crew_ids, role_ids):
+        """Fetches existing film credits to prevent duplicates."""
+        return Credit.query.filter(
+            Credit.film_id == film_id,
+            Credit.crew_id.in_(crew_ids),
+            Credit.role_id.in_(role_ids)
+        ).all()

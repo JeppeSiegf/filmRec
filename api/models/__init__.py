@@ -9,5 +9,4 @@ from .genre import Genre
 from .credit import Credit
 from .user import User
 
-
 __all__ = ['Film', 'Crew', 'Role', 'Genre', 'Credit', 'User']

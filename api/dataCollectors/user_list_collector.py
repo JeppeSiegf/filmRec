@@ -2,12 +2,13 @@ import asyncio
 import enum
 import aiohttp
 from api.dataCollectors.list_collector import ListCollector
-from sort_categories import TimePeriodSort,UserSorting
+from api.dataCollectors.sort_categories import TimePeriodSort, UserSorting
 
 
 class UserListCollector(ListCollector):
     def __init__(self, user: str = None) -> None:
         super().__init__()
+        self.entries_per_page = 30
         if user is None:
             self.url = 'https://letterboxd.com/members/popular/'
             self.user = None
@@ -15,15 +16,14 @@ class UserListCollector(ListCollector):
             self.url = f"https://letterboxd.com/{user}/following/"
             self.user = user
 
-    async def fetch_users_list(self, timespan: TimePeriodSort = None, order : UserSorting = None ):
+    async def fetch_users_list(self, timespan: TimePeriodSort = None, order: UserSorting = None):
         if self.user is None:
             if timespan is not None:
-                self.url = TimePeriodSort.sort(self.url,timespan)
+                self.url = TimePeriodSort.sort(self.url, timespan)
         else:
             if order is not None:
-                self.url = UserSorting.sort(self.url,order)
+                self.url = UserSorting.sort(self.url, order)
         await self.fetch_list()
-
 
     async def fetch_page_data(self, session, page_url):
         dom = await self.get_parsed_page(session, page_url)
@@ -50,10 +50,9 @@ class UserListCollector(ListCollector):
 
 
 async def main():
-
     collector = UserListCollector()
 
-    await collector.fetch_users_list(timespan = TimePeriodSort.WEEK)
+    await collector.fetch_users_list(timespan=TimePeriodSort.WEEK)
 
     users_list = collector.items
     print(users_list)

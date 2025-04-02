@@ -1,7 +1,6 @@
 import pytest
 from api.dataCollectors.user_ratings_collector import UserRatingsCollector  # Adjust to your actual import path
 
-
 TEST_CASES = [
     {
         "user": "mscorsese",
@@ -14,6 +13,7 @@ TEST_CASES = [
         "expected_ratings": 0,  # Expecting 0 ratings
     }
 ]
+
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("test_case", TEST_CASES)
@@ -57,7 +57,7 @@ async def test_user_ratings_collector(test_case):
                 assert isinstance(user, str) and user == test_case["user"]
                 assert isinstance(film_slug, str) and film_slug
                 assert ((isinstance(rating_value, int)
-                        and 1 <= rating_value <= 10)
+                         and 1 <= rating_value <= 10)
                         or rating_value is None)
                 assert isinstance(liked, bool)
 

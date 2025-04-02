@@ -8,11 +8,11 @@ genre_model = api.model('Genre', {
     'genre': fields.String(required=True, description='genre name')
 })
 
+
 @api.route('/')
 class GenreList(Resource):
     @api.marshal_list_with(genre_model)
     def get(self):
-
         return GenreService.get_all_genres()
 
 
@@ -24,4 +24,3 @@ class Genre(Resource):
         if genre:
             return genre
         api.abort(404)
-

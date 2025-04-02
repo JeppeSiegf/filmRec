@@ -2,23 +2,28 @@ import asyncio
 from typing import List
 
 from api.dataCollectors.list_collector import ListCollector
-from api.dataCollectors.sort_categories import ReleaseDateFilter, GenreFilter, FilmSorting
+from api.dataCollectors.sort_categories import ReleaseDateFilter, GenreFilter, RatingSorting
 import time
 
 
 class UserRatingsCollector(ListCollector):
-    def __init__(self, user: str) -> None:
+    def __init__(self, user: str, stop_film_ref: str = None) -> None:
         super().__init__()
+        self.stop_film = stop_film_ref
         self.url = f"https://letterboxd.com/{user}/films/"
+        self.entries_per_page = 72
         self.user = user
 
-    async def fetch_ratings_list(self, decade: ReleaseDateFilter = None, genres: List[GenreFilter] = [], order: FilmSorting = None):
+    async def fetch_ratings_list(self, decade: ReleaseDateFilter = None,
+                                 genres: List[GenreFilter] = [],
+                                 order: RatingSorting = None,
+                                 stop_ref=None):
         if decade is not None:
-            ReleaseDateFilter.filter(self.url, decade)
+            self.url = ReleaseDateFilter.filter(self.url, decade)
         if len(genres) > 0:
-            GenreFilter.filter(self.url, genres)
+            self.url = GenreFilter.filter(self.url, genres)
         if order is not None:
-            FilmSorting.sort(self.url, order)
+            self.url = RatingSorting.sort(self.url, order)
         await self.fetch_list()
 
     async def fetch_page_data(self, session, page_url):
@@ -36,7 +41,7 @@ class UserRatingsCollector(ListCollector):
             film_data = poster_container.find("img", {"class": "image"})
             film_slug = film_data.parent.get('data-film-slug', '')
             rating_info = poster_container.find("p", {"class": "poster-viewingdata"})
-            rating = None
+            rating = 0
             liked = False
 
             if rating_info.span:
@@ -46,20 +51,22 @@ class UserRatingsCollector(ListCollector):
                     elif 'like' in span['class']:
                         liked = True
 
+            if film_slug == self.stop_film:
+                return watched_list
+
             watched_list.append([self.user, film_slug, rating, liked])
+
 
         return watched_list
 
 
-
-
 async def main():
     start_time = time.perf_counter()
-    collector = UserRatingsCollector('headeditor')
-    await collector.fetch_ratings_list(None, [], FilmSorting.RANDOM)
+    collector = UserRatingsCollector('samiser', 'the-purge')
+    await collector.fetch_ratings_list(None, [], RatingSorting.LAST_ADDITION)
     elapsed_time = time.perf_counter() - start_time  # End timer
     print(f"Total execution time: {elapsed_time:.2f}s")
-    movielist = collector.url
+    movielist = collector.items
     print(movielist)
 
 

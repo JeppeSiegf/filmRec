@@ -1,6 +1,9 @@
+from datetime import datetime
+
 from sqlalchemy import Column, Integer, String, Boolean, Date, ForeignKey
 from sqlalchemy.orm import relationship
 from api import db
+
 
 class Rating(db.Model):
     __tablename__ = 'user_rating'
@@ -10,7 +13,7 @@ class Rating(db.Model):
     film_id = Column(String(500), ForeignKey('film.page_ref'), nullable=False)  # Film ID with ForeignKey
     rating = Column(Integer, nullable=True)  # Rating (can be NULL)
     liked = Column(Boolean, nullable=False)  # Liked status
-    rating_date = Column(Date, nullable=False)  # Date of the rating
+    rating_date = Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # Date of the rating
 
     # Relationships
     user = relationship('User', backref='ratings', foreign_keys=[user_id])  # Ensure this matches the user_id

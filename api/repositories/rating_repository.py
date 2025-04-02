@@ -1,4 +1,9 @@
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+
+from flask import current_app
 from sqlalchemy import func
+from sqlalchemy.exc import SQLAlchemyError
 
 from api.models.rating import Rating
 from api.models.user import User
@@ -17,14 +22,22 @@ class RatingRepository:
         return Rating.query.filter_by(user_id=user_id, film_id=film_id).first()
 
     @staticmethod
-    def get_for_ratings_film(film_ref,rating = 10):
+    def get_latest_rating_by_user(user_id):
+        return (
+            Rating.query
+            .filter_by(user_id=user_id)
+            .order_by(Rating.rating_date.desc())
+            .first()
+        )
+
+    @staticmethod
+    def get_for_ratings_film(film_ref, rating=10):
         return (
             Rating.query
             .filter_by(film_id=film_ref, rating=rating)
             .with_entities(Rating.user_id)
             .subquery()  # Call subquery() on the entire query
         )
-
 
     @staticmethod
     def get_films_rated_by_users(users, rating=10, limit=10):
@@ -44,8 +57,6 @@ class RatingRepository:
         )
         return top_films
 
-
-
     @staticmethod
     def create_rating(rating: Rating):
         # Check if user exists, if not, create a new user
@@ -62,11 +73,10 @@ class RatingRepository:
             print('no film')
             return None
 
-
         if rating.rating is not None and (rating.rating < 0 or rating.rating > 10):
             raise ValueError("Rating must be between 0 and 5.")
 
-        # Check if a rating already exists for this user and film
+        # Chreeck if a rating already exists for this user and film
         existing_rating = Rating.query.filter_by(user_id=rating.user_id, film_id=rating.film_id).first()
         if existing_rating:
             print('already there')
@@ -77,33 +87,20 @@ class RatingRepository:
         db.session.add(rating)
         db.session.commit()
         return rating
-
     @staticmethod
     def update_rating(rating):
-        """
-        Update an existing rating instance.
-        """
-        if not isinstance(rating, Rating):
-            raise TypeError("Expected a Rating instance.")
-
-        existing_rating = Rating.query.get(rating.id)
-
-        if not existing_rating:
-            return None  # Return if the rating does not exist
-
-        if rating.rating is not None:
-            if rating.rating < 0 or rating.rating > 5:
-                raise ValueError("Rating must be between 0 and 5.")
-            existing_rating.rating = rating.rating
-
-
-        if rating.liked is not None:
-            existing_rating.liked = rating.liked
-        if rating.rating_date is not None:
-            existing_rating.rating_date = rating.rating_date
-
-        db.session.commit()
-        return existing_rating
+        if not rating:
+            return None
+        # Update the timestamp (or any other fields as needed)
+        rating.rating_date = datetime.utcnow()
+        try:
+            db.session.commit()
+            print(f"Rating updated for film_id {rating.film_id} and user_id {rating.user_id}")
+            return rating
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            print(f"Error updating rating: {e}")
+            return None
 
     @staticmethod
     def delete_rating(rating_id):
@@ -111,3 +108,27 @@ class RatingRepository:
         if rating:
             db.session.delete(rating)
             db.session.commit()
+
+    @staticmethod
+    def get_existing_rating_map(user_id: str, film_refs: list[str]):
+
+        ratings = db.session.query(Rating).filter(
+            Rating.user_id == user_id,
+            Rating.film_id.in_(film_refs)
+        ).all()
+        return {(r.film_id, r.user_id): r for r in ratings}
+
+    @staticmethod
+    def bulk_update_ratings(ratings: list[Rating]):
+        if not ratings:
+            return
+        for rating in ratings:
+            db.session.merge(rating)  # or just update fields manually
+        db.session.commit()  # Commit only the update portion
+
+    @staticmethod
+    def bulk_insert_ratings(ratings: list[Rating]):
+        if not ratings:
+            return
+        db.session.bulk_save_objects(ratings)
+        db.session.commit()  # Commit only the insert portion

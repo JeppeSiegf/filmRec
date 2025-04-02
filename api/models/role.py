@@ -1,4 +1,6 @@
 from api import db
+
+
 class Role(db.Model):
     __tablename__ = 'role'
 
@@ -7,4 +9,3 @@ class Role(db.Model):
 
     # Relationship with credits (many-to-many through Credit table)
     credits = db.relationship('Credit', back_populates='role')
-

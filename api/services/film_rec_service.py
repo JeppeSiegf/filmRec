@@ -1,24 +1,25 @@
-from  api.services.rating_service import RatingService
+from api.services.rating_service import RatingService
 from api.services.film_service import FilmRepository
-from api.repositories.film_rec_repository import RecommendationRepository
+from api.recomendation_engine.ANNS_recommendation import RecommenderSystem
+
 
 class Film_Rec_Service:
 
     @staticmethod
-    def get_films_reccomendations(film_ref):
+    def get_films_reccommendations(page_ref):
 
-        is_in_db = FilmRepository.get_film_by_ref(film_ref)
+        is_in_db = FilmRepository.get_film_by_ref(page_ref)
         if is_in_db is None:
             print('not in db')
-            return None
+            return []
+
+        recommender = RecommenderSystem(None, None, None, None)  # Initialize without data
+        rec_IDs = recommender.get_similar_movies(page_ref, 12)
 
         film_recs = []
-        # topfilms = FilmRepository.get_similar_movies_based_on_distribution(film_ref)'
-        topfilms = RecommendationRepository.get_similar_films(film_ref)
-        for film in topfilms:
-            print(film)
 
-            rec = FilmRepository.get_film_by_ref(film)
-            film_recs.append(rec)
+        for id in rec_IDs:
+            film = FilmRepository.get_film_by_ref(id[0])
+            film_recs.append(film)
 
         return film_recs

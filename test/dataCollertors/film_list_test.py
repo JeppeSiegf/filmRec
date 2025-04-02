@@ -18,7 +18,7 @@ TEST_CASES = [
         "list": "most-fans-on-letterboxd-2022",
         "expected_status": "success",
         "list_len": 100,
-        "page_no": 1# Should have at least 10 movies
+        "page_no": 1  # Should have at least 10 movies
     },
 
     {
@@ -28,7 +28,7 @@ TEST_CASES = [
         "expected_status": "success",
         "list_len": 1000,  # Should have at least 200 movies
         "page_no": 10
-    },{
+    }, {
         "user": "nonexistentuser123456",
         "list": "fakelist",
         "expected_status": "fail"
@@ -69,7 +69,6 @@ async def test_film_list_collector(test_case):
             assert len(pages_fetched) > 0, "Should fetch at least one page"
             assert min_page <= len(pages_fetched) <= max_page
 
-
             # Verify total count
             assert collector.filmCount >= test_case.get("min_count", 1)
             assert collector.filmCount == test_case.get("list_len")
@@ -97,8 +96,6 @@ async def test_film_list_collector(test_case):
             print(f"Expected failure: {e}")
         else:
             raise
-
-
 
 
 if __name__ == '__main__':

@@ -9,7 +9,6 @@ from api.repositories.user_repository import UserRepository
 class TestUserRepository:
 
     def test_get_all_users(self, test_db, test_user):
-
         users = UserRepository.get_all_users()
         assert isinstance(users, list)
         assert len(users) > 0
@@ -22,7 +21,6 @@ class TestUserRepository:
         assert user.username == test_user.username
 
     def test_create_user(self, test_db):
-
         unique_suffix = datetime.utcnow().timestamp()
         new_user = User(
             username=f"TestUser_{unique_suffix}",

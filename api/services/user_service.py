@@ -3,6 +3,7 @@ from api.repositories.user_repository import UserRepository
 from api.repositories.user_repository import UserRepository
 from api.models.user import User
 
+
 class UserService:
 
     @staticmethod

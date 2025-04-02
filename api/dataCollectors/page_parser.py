@@ -3,6 +3,7 @@ from json import loads
 from bs4 import BeautifulSoup
 import abc
 
+
 class PageParser:
     @staticmethod
     async def __fetch_page(session, url):
@@ -25,7 +26,3 @@ class PageParser:
         except Exception as e:
             raise RuntimeError(f"Error parsing response from {url}: {e}")
         return dom
-
-
-
-

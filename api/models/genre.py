@@ -10,9 +10,9 @@ film_genre = db.Table(
 class Genre(db.Model):
     __tablename__ = 'genre'
 
-    id = db.Column(db.Integer, primary_key=True, default=db.func.nextval('id_seq'))  # Primary key with PostgreSQL sequence
+    id = db.Column(db.Integer, primary_key=True,
+                   default=db.func.nextval('id_seq'))  # Primary key with PostgreSQL sequence
     genre = db.Column(db.String(255), nullable=True)  # Genre name
 
     def __repr__(self):
         return f'<{self.genre}>'
-
