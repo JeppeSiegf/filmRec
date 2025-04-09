@@ -1,18 +1,8 @@
-import os
-
-from sklearn.decomposition import TruncatedSVD
-
+import numpy as np
+from surprise import Dataset, Reader
+from surprise import SVD as SurpriseSVD
 from api import create_app
 from api.recomendation_engine.recommendation_base import BaseRecommender
-
-import abc
-import numpy as np
-import pandas as pd
-import pickle
-from surprise import SVD as SurpriseSVD
-from surprise import Dataset, Reader
-from annoy import AnnoyIndex
-
 from api.services.rating_service import RatingService
 
 
@@ -20,7 +10,7 @@ class SVDRecommender(BaseRecommender):
     def __init__(self, n_components=100, n_trees=100,
                  n_epochs=20, lr_all=0.005, reg_all=0.02, random_state=42):
         super().__init__(n_components, n_trees,)
-        self.folder_path = "api/recommendation_engine/SVDmodel"
+        self.folder_path = "models/SVD"
         self.reader = Reader(rating_scale=(0, 1))
         self.svd_params = {
             'n_factors': n_components,

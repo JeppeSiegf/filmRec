@@ -1,3 +1,4 @@
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import SQLAlchemyError
 from api import db
 from api.models import User
@@ -14,10 +15,30 @@ class UserRepository:
             db.session.rollback()
             return None
 
-    @classmethod
-    def update_user(cls, profile_ref, update_data):
+    @staticmethod
+    def bulk_insert(user_data):
+
+        if not user_data:
+            print("No film data provided.")
+            return []
+
+        stmt = insert(User).values(user_data)
+        stmt = stmt.on_conflict_do_nothing(index_elements=["page_ref"])
+
         try:
-            user = cls.get_user_by_profile_ref(profile_ref)
+            db.session.execute(stmt)
+            db.session.commit()
+            print("Inserted films (duplicates were skipped).")
+            return user_data
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            print(f"Database error during bulk insert: {e}")
+            return []
+
+    @staticmethod
+    def update_user(profile_ref, update_data):
+        try:
+            user = UserRepository.get_user_by_profile_ref(profile_ref)
             if not user:
                 return None
 

@@ -1,5 +1,5 @@
 import pytest
-from api.dataCollectors.user_list_collector import UserListCollector
+from api.dataCollectors.user_list_collector import UserPaginateParser
 
 TEST_CASES = [
     {
@@ -18,7 +18,7 @@ TEST_CASES = [
 @pytest.mark.asyncio
 @pytest.mark.parametrize("test_case", TEST_CASES)
 async def test_user_list_collector(test_case):
-    collector = UserListCollector()
+    collector = UserPaginateParser()
 
     try:
         # Fetch the data

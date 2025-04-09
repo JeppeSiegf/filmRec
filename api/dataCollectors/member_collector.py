@@ -1,16 +1,15 @@
 import asyncio
 from typing import Union, Tuple
 
-import aiohttp
-from api.dataCollectors.list_collector import ListCollector
-from api.dataCollectors.sort_categories import RatingRangeFilter, SingleRatingFilter, UserSorting
+from api.dataCollectors.utils.paginate_parser import PaginateParser
+from api.dataCollectors.utils.sort_categories import RatingRangeFilter, SingleRatingFilter, UserSorting
 
 
 # Member is term used for a user who have logged a movie on the site -
 # Used here a way to gather both user and rating data in a convenient location
 # Also help to ensure that only data tied to existing film gets added to the db
 
-class MemberListCollector(ListCollector):
+class MemberListCollector(PaginateParser):
     def __init__(self, film_ref: str) -> None:
         super().__init__()
         self.url = f"https://letterboxd.com/film/{film_ref}/members/"
@@ -19,7 +18,7 @@ class MemberListCollector(ListCollector):
         self.ratings = []
 
     async def fetch_member_list(self, ratings: Union[SingleRatingFilter,
-                                Tuple[RatingRangeFilter, RatingRangeFilter]] = None,
+    Tuple[RatingRangeFilter, RatingRangeFilter]] = None,
                                 order: UserSorting = None):
 
         if ratings is not None:
@@ -30,6 +29,8 @@ class MemberListCollector(ListCollector):
         if order is not None:
             self.url = UserSorting.sort(self.url, order)
         await self.fetch_list()
+
+        self.__split_member_list(self.items)
 
     async def fetch_page_data(self, session, page_url):
 
@@ -93,9 +94,9 @@ class MemberListCollector(ListCollector):
 
 async def main():
     collector = MemberListCollector('maya-deren-take-zero')
-    await collector.fetch_member_list(ratings=SingleRatingFilter.NO_STARS, order=UserSorting.ALPHABETIC)
-    print(collector.items)
-    print(len(collector.items))
+    await collector.fetch_member_list()
+    print(collector.users)
+
 
 
 if __name__ == "__main__":

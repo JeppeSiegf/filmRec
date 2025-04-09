@@ -1,6 +1,6 @@
 import pytest
 import asyncio
-from api.dataCollectors.member_collector import MemberListCollector  # Adjust the import based on your structure
+from api.dataCollectors.member_collector import MemberPaginateParser  # Adjust the import based on your structure
 
 TEST_CASES = [
     {
@@ -26,7 +26,7 @@ async def test_member_list_collector(test_case):
     pages_fetched = []
 
     # Instantiate the collector with the film_ref from the test_case
-    collector = MemberListCollector(test_case["film_ref"])
+    collector = MemberPaginateParser(test_case["film_ref"])
 
     # Override the fetch_page_data method to track pages fetched
     original_fetch = collector.fetch_page_data
@@ -42,7 +42,7 @@ async def test_member_list_collector(test_case):
     collector.fetch_page_data = tracked_fetch
 
     # Fetch the member list
-    await collector.fetch_film_list()
+    await collector.fetch_series_list()
 
     # Validate the expected behavior based on test_case
     if test_case["expected_status"] == "success":

@@ -3,17 +3,14 @@ import os
 import re
 import urllib.parse
 from json import loads
+
 import aiohttp
 import unicodedata
-from aiohttp import ClientConnectionError
-from flask import request
-from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_type
 
-from api.dataCollectors.page_parser import PageParser
+from api.dataCollectors.utils.page_parser import PageParser
 
 
 class FilmDetailCollector(PageParser):
-
     _shared_session = None
 
     @classmethod
@@ -70,7 +67,6 @@ class FilmDetailCollector(PageParser):
         self.crew = {}
         self.cast = {}
 
-
     async def fetch_page(self, session: aiohttp.ClientSession = None):
         """
         Fetches and parses the film page.
@@ -124,9 +120,11 @@ class FilmDetailCollector(PageParser):
             )
 
     async def get_title(self, dom):
-        elem = dom.find("h1", {"class": ["filmtitle"]})
-        elem = elem.text if elem else None
-        self.title = elem
+        # Find the <h1> element with the class "headline-1 primaryname"
+        h1_elem = dom.find("h1", {"class": "headline-1 primaryname"})
+        if h1_elem:
+            span_elem = h1_elem.find("span", {"class": "name js-widont prettify"})
+            self.title = span_elem.text if span_elem else None
 
     async def get_title_original(self, dom):
         elem = dom.find("h2", {"class": ["originalname"]})
@@ -201,26 +199,16 @@ class FilmDetailCollector(PageParser):
 
     async def get_movie_poster(self, script):
 
-        # crop: list=(1500, 1000)
-        # .replace('230-0-345', f'{crop[0]}-0-{crop[1]}')
-        # crop: list=(1500, 1000)
-        # .replace('230-0-345', f'{crop[0]}-0-{crop[1]}')
-
-
         if script:
             poster = script['image'] if 'image' in script else None
             original_ref = poster.split('?')[0] if poster else None
             if original_ref:
                 original_ref_large = original_ref.replace('-230-0-345', '-2000-0-3000')
-                self.image_ref = self.proxify_image_url(original_ref)
-                self.image_ref_large = self.proxify_image_url(original_ref_large)
+                self.image_ref = original_ref
+                self.image_ref_large = original_ref_large
 
         else:
             self.image_ref = None
-
-
-
-
 
     # Actually returns amount of ratings rather than watches
     # Suitable replacement for now
@@ -244,15 +232,26 @@ class FilmDetailCollector(PageParser):
 
             # Find the role's corresponding crew list
             role_container = section.find_next_sibling("div", class_="text-sluglist")
+
+            current_role = None
+            count = 1
             if role_container:
                 for crew_link in role_container.find_all("a", class_="text-slug"):
                     href_parts = crew_link["href"].strip().split("/")
                     if len(href_parts) >= 3:
-                        role = href_parts[1].lower()  # Extract role from URL
-                        ref = href_parts[-2]  # Extract reference from URL
-                        name = crew_link.text.strip()  # Extract displayed name
+                        role = href_parts[1].lower()
+                        if role == current_role:
+                            count += 1
+                            rank = count
+                        else:
+                            current_role = role
+                            count = 1
+                            rank = count# Extract role from URL
 
-                        crew_list.append({"role": role, "ref": ref, "name": name})
+                        ref = href_parts[-2]  # Extract reference from URL
+                        name = crew_link.text.strip()
+
+                        crew_list.append({"role": role, "ref": ref, "name": name, "rank": rank})
 
         self.crew = crew_list
 
@@ -262,14 +261,19 @@ class FilmDetailCollector(PageParser):
         # Find the cast container
         cast_container = dom.find("div", class_="cast-list text-sluglist")
         if cast_container:
+            count = 1
             for actor_link in cast_container.find_all("a", class_="text-slug tooltip"):
                 href_parts = actor_link["href"].strip().split("/")
                 if len(href_parts) >= 3:
                     role = "actor"  # Fixed role for all cast members
+
                     ref = href_parts[-2]  # Extract reference from URL
                     name = actor_link.text.strip()  # Extract displayed name
 
-                    cast_list.append({"role": role, "ref": ref, "name": name})
+                    rank = count
+                    count += 1
+
+                    cast_list.append({"role": role, "ref": ref, "name": name, "rank": rank})
 
         self.cast = cast_list
 
@@ -296,12 +300,6 @@ class FilmDetailCollector(PageParser):
             backdrop = banner_div.get('data-backdrop')
         self.banner_ref = backdrop
 
-    def proxify_image_url(self, original_url: str) -> str:
-        api_base = os.getenv("API_BASE_URL", "http://localhost:5000")  # adjust as needed
-        encoded_url = urllib.parse.quote(original_url, safe='')
-        return f"{api_base}/api/proxy/image?url={encoded_url}"
-
-
 
 if __name__ == "__main__":
     asyncio.run(FilmDetailCollector.enable_shared_session())
@@ -322,12 +320,11 @@ if __name__ == "__main__":
 
     asyncio.run(FilmDetailCollector.disable_shared_session())
 
-    print(film.image_ref_large)
-    print(film2.image_ref)
-    print(film3.image_ref)
+    print(film.title)
+    print(film2.title)
+    print(film3.title_original)
     print(film.image_ref)
     print(film.release_year)
     print(film.runtime)
     print(film.image_ref_large)
     print(f"Total watches: {film.total_watches}")
-

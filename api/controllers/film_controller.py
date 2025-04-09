@@ -27,26 +27,27 @@ class FilmList(Resource):
             return films
         api.abort(404, "No matching films found")
 
-    @api.expect(film_model)
-    @api.marshal_with(film_model, code=201)
+    @api.expect([film_model_simple], validate=True)
+    @api.marshal_with(film_model_simple, code=201)
     def post(self):
-        """Create a new film"""
-        data = request.json
-        genres = data.get('genres', [])
+        """Bulk create or update films."""
+        films_data = request.json  # Expecting a list of film objects
 
-        film = Film(
-            page_ref=data['page_ref'],
-            image_ref=data.get('image_ref'),
-            title=data.get('title'),
-            total_watches=data.get('total_watches', 0),
-            last_update=datetime.utcnow()
-        )
-        created_film = FilmService.create_film(film)  # Call the service method synchronously
-        return created_film, 201
+        if not isinstance(films_data, list) or not films_data:
+            return {"message": "Invalid input. Expected a non-empty list of films."}, 400
+
+        try:
+            # Call your service method to bulk upsert films
+            result = FilmService.create_multiple_films(films_data)
+
+            return result, 201
+
+        except Exception as e:
+            return {"message": f"Error processing films: {str(e)}"}, 500
 
 
 @api.route('/by')
-class FilmByDirector(Resource):
+class FilmByCrewMember(Resource):
     @api.marshal_with(film_model)
     @api.param('director_ref', 'The reference of the director to filter films by')
     def get(self):
@@ -74,30 +75,8 @@ class FilmResource(Resource):
     @api.marshal_with(film_model)
     def get(self, page_ref):
         """Fetch a film given its reference"""
-        film = FilmService.get_film_by_page_ref(page_ref)  # Call the service method synchronously
+        film = FilmService.get_film_by_page_ref(page_ref,True)  # Call the service method synchronously
         if film:
             return film
         api.abort(404, "Film not found")
 
-    @api.expect(film_model)
-    @api.marshal_with(film_model)
-    def put(self, page_ref):
-        """Update a film given its reference."""
-        updated_data = request.json  # Get the updated data from the request
-
-        try:
-            updated_film = FilmService.update_film(page_ref)
-            return {
-                "message": "Film updated successfully",
-                "film": {
-                    "page_ref": updated_film.page_ref,
-                    "title": updated_film.title,
-                    "image_ref": updated_film.image_ref,
-                    "total_watches": updated_film.total_watches,
-                    "release_year": updated_film.release_year,
-                    "last_update": updated_film.last_update,
-                    "genres": [genre.genre for genre in updated_film.genres]
-                }
-            }, 200
-        except ValueError as e:
-            return {"message": str(e)}, 404

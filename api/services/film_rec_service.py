@@ -1,25 +1,28 @@
+import random
+
 from api.services.rating_service import RatingService
-from api.services.film_service import FilmRepository
-from api.recomendation_engine.ANNS_recommendation import RecommenderSystem
+from api.services.film_service import FilmRepository, FilmService
+from api.recomendation_engine.ALS_recommendation import ALSRecommender
 
 
 class Film_Rec_Service:
 
     @staticmethod
-    def get_films_reccommendations(page_ref):
+    def get_films_recommendations(page_ref, len):
 
-        is_in_db = FilmRepository.get_film_by_ref(page_ref)
+        is_in_db = FilmService.get_film_by_page_ref(page_ref,False)
         if is_in_db is None:
             print('not in db')
             return []
+        # TODO remove once model handles metadata
+        top_k = len + 1
 
-        recommender = RecommenderSystem(None, None, None, None)  # Initialize without data
-        rec_IDs = recommender.get_similar_movies(page_ref, 12)
+        recommender = ALSRecommender()
+        recs = recommender.get_similar_items(page_ref, top_k)
 
-        film_recs = []
-
-        for id in rec_IDs:
-            film = FilmRepository.get_film_by_ref(id[0])
-            film_recs.append(film)
+        film_recs = FilmService.get_films_by_refs(recs,True)
+        # TODO remove once model handles metadata
+        film_recs.pop(0)
+        random.shuffle(film_recs)
 
         return film_recs

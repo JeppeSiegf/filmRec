@@ -1,0 +1,47 @@
+from api.repositories.series_repository import SeriesRepository
+from api.services.film_service import FilmService
+
+
+class SeriesService:
+
+    @staticmethod
+    async def upsertFilmSeries(series: list[tuple]) -> None:
+
+        all_film_refs = []
+        for col in series:
+            _, _, _, film_refs = col
+            all_film_refs.extend(film_refs)
+
+        # Step 2: Get valid films from DB
+        valid_films = FilmService.get_films_by_refs(all_film_refs,False)
+        valid_refs = {film.page_ref for film in valid_films}
+
+        # Step 3: Load all existing series from DB
+        existing_series = {s.page_ref: s for s in SeriesRepository.get_all()}
+
+        upsert_series_data = []  # List of dicts: {"page_ref": ..., "name": ..., "film_refs": [...]}
+
+        # Step 4: Determine which series need upsert
+        for page_ref, name, expected_count, film_refs in series:
+            cleaned_refs = list(set(film_refs) & valid_refs)
+            if len(cleaned_refs) < 2:
+                continue  # Skip collections with fewer than 2 valid films
+
+            existing = existing_series.get(page_ref)
+            db_film_count = len(existing.films.all()) if existing else 0
+
+            if not existing or db_film_count != expected_count:
+                upsert_series_data.append({"page_ref": page_ref, "name": name, "film_refs": cleaned_refs})
+
+        # Step 5: Bulk upsert the series and get film update map
+        film_update_map = SeriesRepository.bulk_upsert(upsert_series_data)
+
+        # Step 6: Update film relationships per series
+        for series_ref, film_refs in film_update_map.items():
+
+            series = SeriesRepository.get_by_ref(series_ref)
+            FilmService.update_series_id(series, film_refs)
+
+
+
+

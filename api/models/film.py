@@ -22,13 +22,16 @@ class Film(db.Model):
     release_year = db.Column(db.Integer)
     runtime = db.Column(db.Integer)
 
+
     # Relationships
     genres = db.relationship('Genre', secondary='film_genre', backref=db.backref('films', lazy='dynamic'))
-    languages = db.relationship('Language', secondary='film_language',
-                                backref=db.backref('films', lazy='dynamic'))
+    languages = db.relationship('Language', secondary='film_language',backref=db.backref('films', lazy='dynamic'))
     credits = db.relationship('Credit', back_populates='film')
 
-    from datetime import datetime
+    series_id = db.Column(db.Integer, db.ForeignKey('series.id'))
+    series = db.relationship('Series', back_populates='films')
+
+
 
     # For create
     @staticmethod
@@ -60,6 +63,7 @@ class Film(db.Model):
             'runtime': None,
             'total_watches': None,
             'last_update': datetime.utcnow(),
+            'series_id': None
 
         }
 
@@ -68,7 +72,6 @@ class Film(db.Model):
     def map_film_detailed(film_detail):
 
 
-        # Validate the instance type (you might also check for required attributes)
         if not hasattr(film_detail, 'ref'):
             raise ValueError("Expected a FilmDetailCollector instance with attribute 'ref'.")
 
@@ -86,6 +89,7 @@ class Film(db.Model):
             'last_update': datetime.utcnow(),
             'genres': film_detail.genre,
             'languages': film_detail.languages,
+            'series_id': None,
             'crew': film_detail.crew,
             'cast': film_detail.cast
         }

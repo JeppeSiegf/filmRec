@@ -4,22 +4,17 @@ from datetime import datetime
 import pandas as pd
 
 from api import create_app
-from api.dataCollectors.member_collector import MemberListCollector
-from api.dataCollectors.sort_categories import FilmSorting, RatingSorting
-from api.dataCollectors.user_list_collector import UserListCollector
-from api.dataCollectors.user_ratings_collector import UserRatingsCollector
-from api.dataCollectors.film_list_collector import FilmListCollector
+from api.dataCollectors.member_collector import MemberPaginateParser
+from api.dataCollectors.utils.sort_categories import FilmSorting, RatingSorting
+from api.dataCollectors.user_list_collector import UserPaginateParser
+from api.dataCollectors.ratings_collector import UserRatingsCollector
+from api.dataCollectors.film_list_collector import FilmPaginateParser
 from api.models.rating import Rating
 from api.models.user import User
 from api.recomendation_engine.ANNS_recommendation import RecommenderSystem
 from api.services.film_service import FilmService
 from api.services.user_service import UserService
 from api.dataCollectors.film_detail_collector import FilmDetailCollector
-import logging
-from sqlalchemy import event
-from sqlalchemy.engine import Engine
-
-
 
 app = create_app()
 
@@ -35,7 +30,7 @@ async def update_all_films():
 
 
 async def add_users():
-    collector = UserListCollector()
+    collector = UserPaginateParser()
     await collector.fetch_user_list()
     userlist = collector.users
     for user in userlist:
@@ -60,8 +55,8 @@ async def add_ratings_for_users():
 
 async def ratings_for_films():
     ref = 'parasite-2019'
-    collector = MemberListCollector(ref)
-    await collector.fetch_film_list()
+    collector = MemberPaginateParser(ref)
+    await collector.fetch_series_list()
     ratinglist = collector.members
     # UserService.create_user(newuser)
 
@@ -81,9 +76,11 @@ async def ratings_for_films():
         )
         RatingService.create_rating(newrate)
 
+
+# TODO move to worker
 async def updatemovies():
-    collector = FilmListCollector('hershwin','all-the-movies','black-dog-2024')
-    await collector.fetch_film_list(order=FilmSorting.LAST_ADDITION)
+    collector = FilmPaginateParser('hershwin', 'all-the-movies', 'black-dog-2024')
+    await collector.fetch_series_list(order=FilmSorting.LAST_ADDITION)
     newfils = collector.items
     print(newfils[0])
     await FilmService.create_multiple_films(newfils)

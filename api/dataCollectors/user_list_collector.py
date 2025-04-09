@@ -1,11 +1,10 @@
 import asyncio
-import enum
-import aiohttp
-from api.dataCollectors.list_collector import ListCollector
-from api.dataCollectors.sort_categories import TimePeriodSort, UserSorting
+
+from api.dataCollectors.utils.paginate_parser import PaginateParser
+from api.dataCollectors.utils.sort_categories import TimePeriodSort, UserSorting
 
 
-class UserListCollector(ListCollector):
+class UserListCollector(PaginateParser):
     def __init__(self, user: str = None) -> None:
         super().__init__()
         self.entries_per_page = 30
@@ -50,7 +49,7 @@ class UserListCollector(ListCollector):
 
 
 async def main():
-    collector = UserListCollector()
+    collector = UserListCollector('dtf')
 
     await collector.fetch_users_list(timespan=TimePeriodSort.WEEK)
 

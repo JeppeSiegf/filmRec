@@ -12,5 +12,22 @@ class User(db.Model):
     username = Column(String(500))  # Username (can be NULL)
     last_updated = Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # Last update date
 
+    from datetime import datetime
+
+    @staticmethod
+    def map(user_tuple):
+
+        if not isinstance(user_tuple, (list, tuple)):
+            raise ValueError("Expected a tuple or list.")
+
+        name = user_tuple[0] if len(user_tuple) > 0 else None
+        profile_ref = user_tuple[1] if len(user_tuple) > 1 else None
+
+        return {
+            'profile_ref': profile_ref,
+            'username': name,
+            'last_updated': datetime.utcnow()
+        }
+
     def __repr__(self):
         return f'<User {self.username} (profile_ref={self.profile_ref})>'

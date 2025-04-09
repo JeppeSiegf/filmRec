@@ -7,7 +7,9 @@ class Credit(db.Model):
     credit_id = db.Column(db.Integer, primary_key=True, autoincrement=True)  # Primary key
     film_id = db.Column(db.String(250), db.ForeignKey('film.page_ref'), nullable=False)  # Foreign key to Film
     crew_id = db.Column(db.String(200), db.ForeignKey('crew.page_ref'), nullable=False)  # Foreign key to Crew
-    role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)  # Foreign key to Role
+    role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)
+    rank = db.Column(db.Integer)
+
 
     # Relationships
     film = db.relationship('Film', back_populates='credits', lazy='joined')

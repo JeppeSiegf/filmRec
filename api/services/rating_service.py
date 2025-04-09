@@ -18,20 +18,9 @@ class RatingService:
         return RatingRepository.get_all_ratings()
 
     @staticmethod
-    def get_rating_by_user_and_film(user_id, film_id):
-        return RatingRepository.get_rating_by_user_and_film(user_id, film_id)
-
-    @staticmethod
     def get_latest_rating_by_user(user_id):
         return RatingRepository.get_latest_rating_by_user(user_id)
 
-    @staticmethod
-    def get_for_ratings_film(film_ref, rating=10):
-        return RatingRepository.get_for_ratings_film(film_ref, rating)
-
-    @staticmethod
-    def get_films_rated_by_users(users, rating=10):
-        return RatingRepository.get_films_rated_by_users(users, rating)
 
     @staticmethod
     def create_rating(rating: Rating):
@@ -39,91 +28,75 @@ class RatingService:
             raise TypeError("Expected a Rating instance.")
         return RatingRepository.create_rating(rating)
 
-    @staticmethod
-    def update_rating(rating: Rating):
-        if not isinstance(rating, Rating):
-            raise TypeError("Expected a Rating instance.")
-        return RatingRepository.update_rating(rating)
 
     @staticmethod
-    def upsert_user_ratings(rating_data):
+    def upsert_user_ratings(rating_data: list[tuple]) -> list[dict]:
+
         if not rating_data:
             return []
 
-        user_ref = rating_data[0][0]
-        user = User.query.filter_by(profile_ref=user_ref).first()
-        if not user:
-            print(f"User '{user_ref}' not found. Aborting.")
-            return []
+        # Extract unique user and film refs
+        user_refs = {r[0] for r in rating_data}
+        film_refs = {r[1] for r in rating_data}
 
-        # Get film refs from input
-        film_refs = [r[1] for r in rating_data]
+        # Fetch all users and films with one query each
+        users = User.query.filter(User.profile_ref.in_(user_refs)).all()
         films = Film.query.filter(Film.page_ref.in_(film_refs)).all()
-        # Map film page_ref to film.page_ref (both strings)
-        film_ref_to_id = {f.page_ref: f.page_ref for f in films}
 
-        # Validate only ratings that have a matching film and non-null rating
-        valid_data = [r for r in rating_data if r[1] in film_ref_to_id and r[2] is not None]
+        user_map = {u.profile_ref: u for u in users}
+        film_map = {f.page_ref: f for f in films}
 
-        if not valid_data:
+        # Filter ratings that have both a valid user and film
+        valid_ratings = [
+            r for r in rating_data
+            if r[0] in user_map and r[1] in film_map and r[2] is not None
+        ]
+        if not valid_ratings:
             print("No valid ratings to process.")
             return []
 
-        # Use film page_refs for existing rating lookup (all strings now)
-        valid_film_refs = [film_ref_to_id[r[1]] for r in valid_data]
-        existing_map = RatingRepository.get_existing_rating_map(user.profile_ref, valid_film_refs)
-        existing = []
-        print("Existing ratings (in input order):")
-        for user_ref, film_ref, _, _ in valid_data:
-            film_id = film_ref_to_id[film_ref]
-            rating = existing_map.get((film_id, user.profile_ref))
-            if rating:
-                print(f"Key: ({film_id}, {user.profile_ref}) -> {rating}")
-                existing.append(((film_id, user.profile_ref), rating))
-        to_create, to_update = [], []
+        # Step 4: Create set of (film_id, user_id) pairs for lookup
+        film_user_keys = {
+            (film_map[r[1]].page_ref, user_map[r[0]].profile_ref) for r in valid_ratings
+        }
 
-        first_rating_object = None
+        # Step 5: Get existing rating map
+        existing_map = RatingRepository.get_existing_rating_map_bulk(film_user_keys)
 
-        for user_ref, film_ref, rating_value, liked in valid_data:
-            film_id = film_ref_to_id[film_ref]
-            existing_rating = existing_map.get((film_id, user.profile_ref))
-            if existing_rating:
-                # Update the existing rating
-                existing_rating.rating = rating_value
-                existing_rating.liked = liked
-                existing_rating.rating_date = datetime.utcnow()
-                to_update.append(existing_rating)
-                # Capture the first processed rating if not already set
-                if first_rating_object is None:
-                    first_rating_object = existing_rating
+        to_upsert = []
+
+        # Step 6: Build rating objects for upsert
+        for user_ref, film_ref, rating_value, liked in valid_ratings:
+            user_id = user_map[user_ref].profile_ref
+            film_id = film_map[film_ref].page_ref
+            key = (film_id, user_id)
+
+            if key in existing_map:
+                # Update existing rating
+                rating = existing_map[key]
+                rating.rating = rating_value
+                rating.liked = liked
+                rating.rating_date = datetime.utcnow()
+                to_upsert.append(rating)
             else:
-                # Create a new rating
-                new_rating = Rating(
-                    user_id=user.profile_ref,
-                    film_id=film_id,
-                    rating=rating_value,
-                    liked=liked,
-                    rating_date=datetime.utcnow()
-                )
-                to_create.append(new_rating)
-                if first_rating_object is None:
-                    first_rating_object = new_rating
+                # Create new rating
+                to_upsert.append({
+                    "user_id": user_id,
+                    "film_id": film_id,
+                    "rating": rating_value,
+                    "liked": liked,
+                    "rating_date": datetime.utcnow()
+                })
 
-
-
+        # Step 7: Commit using repository
         try:
-
-            RatingRepository.bulk_update_ratings(to_update)
-            RatingRepository.bulk_insert_ratings(to_create)
-            if first_rating_object:
-                # Call update_rating on the first rating object (whether updated or newly created)
-                RatingRepository.update_rating(first_rating_object)
-            print(f"Ratings upserted: {len(to_create)} created, {len(to_update)} updated.")
+            RatingRepository.bulk_upsert_ratings(to_upsert)
+            print(f"Upserted {len(to_upsert)} ratings.")
         except Exception as e:
-            print(f"Error during rating upsert: {e}")
+            print(f"Error during bulk rating upsert: {e}")
             raise
 
-        return to_create + to_update
+        return to_upsert
 
     @staticmethod
     def convert_ratings_to_dataframe(ratings):

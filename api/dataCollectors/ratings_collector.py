@@ -1,12 +1,12 @@
 import asyncio
+import time
 from typing import List
 
-from api.dataCollectors.list_collector import ListCollector
-from api.dataCollectors.sort_categories import ReleaseDateFilter, GenreFilter, RatingSorting
-import time
+from api.dataCollectors.utils.paginate_parser import PaginateParser
+from api.dataCollectors.utils.sort_categories import ReleaseDateFilter, GenreFilter, RatingSorting
 
 
-class UserRatingsCollector(ListCollector):
+class RatingsCollector(PaginateParser):
     def __init__(self, user: str, stop_film_ref: str = None) -> None:
         super().__init__()
         self.stop_film = stop_film_ref
@@ -56,13 +56,12 @@ class UserRatingsCollector(ListCollector):
 
             watched_list.append([self.user, film_slug, rating, liked])
 
-
         return watched_list
 
 
 async def main():
     start_time = time.perf_counter()
-    collector = UserRatingsCollector('samiser', 'the-purge')
+    collector = RatingsCollector('samiser', 'the-purge')
     await collector.fetch_ratings_list(None, [], RatingSorting.LAST_ADDITION)
     elapsed_time = time.perf_counter() - start_time  # End timer
     print(f"Total execution time: {elapsed_time:.2f}s")

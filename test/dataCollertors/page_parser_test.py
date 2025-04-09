@@ -1,8 +1,7 @@
 import aiohttp
 import pytest
-from bs4 import BeautifulSoup
 
-from api.dataCollectors.page_parser import PageParser
+from api.dataCollectors.utils.page_parser import PageParser
 
 
 @pytest.mark.asyncio

@@ -12,7 +12,7 @@ class Genre(db.Model):
 
     id = db.Column(db.Integer, primary_key=True,
                    default=db.func.nextval('id_seq'))  # Primary key with PostgreSQL sequence
-    genre = db.Column(db.String(255), nullable=True)  # Genre name
+    genre = db.Column(db.String(255), nullable=True, unique=True)  # Genre name
 
     def __repr__(self):
         return f'<{self.genre}>'

@@ -1,7 +1,7 @@
 import pytest
 import asyncio
 
-from api.dataCollectors.film_list_collector import FilmListCollector
+from api.dataCollectors.film_list_collector import FilmPaginateParser
 
 TEST_CASES = [
     {
@@ -45,7 +45,7 @@ async def test_film_list_collector(test_case):
         # Track pagination data
         pages_fetched = []
 
-        collector = FilmListCollector(test_case["user"], test_case["list"])
+        collector = FilmPaginateParser(test_case["user"], test_case["list"])
 
         # Override fetch_page_data to track pages
         original_fetch = collector.fetch_page_data
@@ -60,7 +60,7 @@ async def test_film_list_collector(test_case):
         collector.fetch_page_data = tracked_fetch
 
         # Fetch the data
-        await collector.fetch_film_list()
+        await collector.fetch_series_list()
 
         if test_case["expected_status"] == "success":
 

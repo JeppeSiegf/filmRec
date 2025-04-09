@@ -1,14 +1,12 @@
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+load_dotenv()  # Only load the .env.docker if running in Docker
 
 
 class Config:
-    SQLALCHEMY_DATABASE_URI = os.getenv('dbAddress')
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-
-
 
 
 class TestConfig(Config):
