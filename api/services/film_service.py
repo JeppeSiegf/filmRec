@@ -1,29 +1,38 @@
 import asyncio
-import os
 import traceback
-import urllib.parse
 
 from api import create_app, db
 from api.dataCollectors.film_detail_collector import FilmDetailCollector
 from api.models import Genre
 from api.models.film import Film
 from api.models.genre import film_genre
-from api.models.language import film_language, Language
+from api.models.language import Film_Language, Language
 from api.repositories.film_repository import FilmRepository
 from api.services.crew_service import CrewService
+from api.services.genre_service import GenreService
+from api.services.language_service import LanguageService
 from api.services.utils.image_handler import ImageProxy
 
 
 class FilmService:
 
-    @staticmethod
-    def get_all_films():
+    def __init__(self):
+        self.repo = FilmRepository()
+        self.genre_service = GenreService()
+        self.lang_service = LanguageService()
+        self.crew_service = CrewService()
 
-        films = FilmRepository.get_all_films()
+        # TODO use
+        self.image_attrs = ['image_ref','image_ref_large','banner_ref']
+
+
+    def get_all_films(self):
+
+        films = self.repo.get_all_films()
         return films
 
-    @staticmethod
-    def get_film_by_page_ref(page_ref, with_crew):
+
+    def get_film_by_page_ref(self, page_ref, with_crew):
 
         if with_crew is True:
             film = FilmRepository.get_film_by_ref_with_crew(page_ref)
@@ -32,30 +41,29 @@ class FilmService:
 
         return film
 
-    @staticmethod
-    def get_films_by_refs(page_refs: list[str], with_crew):
+
+    def get_films_by_refs(self,page_refs, with_crew):
 
         if with_crew is True:
-            films = FilmRepository.get_films_by_refs_with_crew(page_refs)
+            films = self.repo.get_films_by_refs_with_crew(page_refs)
         else:
-            films = FilmRepository.get_films_by_refs_without_crew(page_refs)
-
+            films = self.repo.get_films_by_refs_without_crew(page_refs)
         return films
 
-    @staticmethod
-    def get_newest_film():
 
-        film = FilmRepository.get_newest_film()
+    def get_newest_film(self):
+
+        film = self.repo.get_newest_film()
         return film
 
-    @staticmethod
-    def search_films(query: str):
 
-        search_result = FilmRepository.search_films(query)
+    def search_films(self, query: str):
+
+        search_result = self.repo.search_films(query)
         return search_result
 
-    @staticmethod
-    async def create_multiple_films(film_tuples):
+
+    async def create_multiple_films(self, film_tuples):
         """
         Takes a list of tuples, maps them to the correct structure, and inserts them in bulk.
         Ensures that the first film's timestamp is the newest.
@@ -71,15 +79,15 @@ class FilmService:
             print("No valid films to insert.")
             return []
 
-        inserted_films = FilmRepository.bulk_insert_films(film_data)
+        inserted_films = self.repo.insert(film_data)
 
-        print(film_data[0]['page_ref'])
-        await FilmService.update_film(film_data[0]['page_ref'],True)
+
+        # TODO removed last entry update add to logic to worker
 
         return inserted_films
 
-    @staticmethod
-    async def update_film(page_ref: str, timestamp=False):
+
+    async def update_film(self, page_ref: str, timestamp=False):
         """
         Update a film with data collected from an external source.
         Uses a single session for all database operations.
@@ -93,7 +101,7 @@ class FilmService:
 
             # Fetch updated data via HTTP and extraction (async)
 
-            #TODO remove collector logic
+            # TODO remove collector logic
             collector = FilmDetailCollector(page_ref)
             await collector.fetch_page()
             await collector.extract_details()
@@ -104,7 +112,7 @@ class FilmService:
             updated_attributes = Film.map_film_detailed(collector)
             print("Mapped description:", updated_attributes.get('description'))
 
-            updated_film = FilmRepository.update_film(page_ref, updated_attributes)
+            updated_film = self.repo.update_film(page_ref, updated_attributes)
 
             if not updated_film:
                 return None
@@ -112,10 +120,10 @@ class FilmService:
             # Using the same session as the updated film
             if not timestamp:
                 if updated_attributes.get('genres'):
-                    FilmService.update_film_genres(updated_film, updated_attributes['genres'])
+                    self.genre_service.update_film_genres(updated_attributes['genres'])
 
                 if updated_attributes.get('languages'):
-                    FilmService.update_film_languages(updated_film, updated_attributes['languages'])
+                    self.lang_service.bulk_update_film_languages(updated_attributes['languages'])
 
                 full_credits = []
                 if updated_attributes.get('crew'):
@@ -124,7 +132,7 @@ class FilmService:
                     full_credits.extend(updated_attributes['cast'])
 
                 if full_credits:
-                    CrewService.add_film_credits_bulk(
+                    self.crew_service.add_film_credits_bulk(
                         film_ref=updated_film.page_ref,
                         crew_data=full_credits
                     )
@@ -137,83 +145,77 @@ class FilmService:
             traceback.print_exc()
             return None
 
-    @staticmethod
-    async def update_multiple_films(film_refs: list[str]):
+    async def update_multiple_films(self, film_refs: list[str], timestamp=False):
+        # Step 1: Get only valid film_refs from the DB
+        existing_refs = set(
+            r[0] for r in db.session.query(Film.page_ref).filter(Film.page_ref.in_(film_refs)).all()
+        )
+
+        valid_refs = [ref for ref in film_refs if ref in existing_refs]
+        if not valid_refs:
+            print("No valid film references found.")
+            return []
+
+        # TODO remove from here
+        collectors = await asyncio.gather(
+            *[FilmService._fetch_and_extract(self, ref, 50) for ref in valid_refs],
+            return_exceptions=False
+        )
+
+        updated_films_data = []
+        for collector in collectors:
+            updated_attributes = Film.map_film_detailed(collector)
+            updated_attributes["page_ref"] = collector.ref
+            updated_films_data.append(updated_attributes)
+
+
+        self.repo.bulk_update_films(updated_films_data)
+
+        # Process associated tables
+        all_genres = []
+        all_languages = []
+        all_credits = []
+
+        for collector in collectors:
+            if collector.genre:
+                all_genres.append((collector.ref, collector.genre))
+
+            if collector.languages:
+                all_languages.append((collector.ref, collector.languages))
+
+            full_credits = []
+            full_credits.extend(collector.crew.values())
+            full_credits.extend(collector.cast.values())
+
+            if full_credits:
+                all_credits.append((collector.ref, full_credits))
+
+        if all_genres:
+            self.genre_service.update_film_genres(all_genres)
+        if all_languages:
+            self.lang_service.bulk_update_film_languages(all_languages)
+        if all_credits:
+            self.crew_service.add_film_credits_bulk(all_credits)
+
+        return valid_refs
+
+
+    async def update_multiple_films_redux(self,film_refs: list[str]):
         """
         Update multiple films using a shared HTTP session.
         """
         await FilmDetailCollector.enable_shared_session()
         try:
             for film_ref in film_refs:
-                await FilmService.update_film(film_ref)
+                await self.update_film(film_ref)
         finally:
             await FilmDetailCollector.disable_shared_session()
 
-    @staticmethod
-    def update_film_genres(existing_film, genres: list[str]):
 
-        try:
-            # Merge the film into the session.
-            film = db.session.merge(existing_film)
 
-            # Insert all genres; duplicates will be skipped by ON CONFLICT DO NOTHING.
-            FilmRepository.bulk_insert_ignore_conflict(Genre, "genre", genres)
-
-            # Query all Genre rows that match the provided names.
-            genre_objs = FilmRepository.get_genres(genres)
-
-            # Build new association entries.
-            new_entries = [{'film_id': film.page_ref, 'genre_id': g.id} for g in genre_objs]
-
-            # Bulk insert associations with ON CONFLICT DO NOTHING.
-            FilmRepository.insert_association_entries(film_genre, new_entries)
-
-            return genre_objs
-        except Exception as e:
-            db.session.rollback()
-            print(f"Error updating film genres: {e}")
-            raise
-
-    @staticmethod
-    def update_film_languages(existing_film, languages: list[dict]) -> list[dict]:
-
-        try:
-            # Validate input structure.
-            if not isinstance(languages, list) or not all(
-                    isinstance(lang, dict) and "name" in lang and "is_primary" in lang for lang in languages):
-                raise ValueError(
-                    "Invalid languages format. Expected list of dictionaries with 'name' and 'is_primary' keys.")
-
-            language_names = [lang["name"] for lang in languages]
-            FilmRepository.bulk_insert_ignore_conflict(Language, "language", language_names)
-
-            # Get potential updated language list
-            language_objs = FilmRepository.get_languages(language_names)
-
-            # Build a mapping from language name to its object.
-            lang_map = {l.language: l for l in language_objs}
-
-            # Prepare association entries with the extra field.
-            new_entries = [
-                {"film_id": existing_film.page_ref,
-                 "language_id": lang_map[lang["name"]].id,
-                 "is_primary": lang["is_primary"]}
-                for lang in languages if lang["name"] in lang_map
-            ]
-
-            # Bulk insert into the association table.
-            FilmRepository.insert_association_entries(film_language, new_entries)
-
-            return new_entries
-        except Exception as e:
-            db.session.rollback()
-            print(f"Error updating film languages: {e}")
-            raise e
-
-    @staticmethod
-    def get_films_by_crew_member(crew_ref: str):
+    def get_films_by_crew_member(self, crew_ref: str):
         # Fetch the credits associated with the crew member
-        film_credits = CrewService.get_credits_by_crew_ref(crew_ref)
+        film_credits = self.crew_service.get_credits_by_crew_ref(crew_ref)
 
         # Extract film ids and roles
         film_ids = [credit.film_id for credit in film_credits]
@@ -224,8 +226,7 @@ class FilmService:
             roles[credit.film_id].append(credit.role.role)
 
         # Fetch films by their ids
-        films = FilmRepository.get_films_by_refs_without_crew(film_ids)
-
+        films = self.repo.get_films_by_refs_without_crew(film_ids)
 
         for film in films:
             film.roles = roles.get(film.page_ref, [])
@@ -233,14 +234,13 @@ class FilmService:
         film_proxies = []
 
         for film in films:
-            film_proxy = FilmService._get_image_proxies(film)
+            film_proxy = self.get_image_proxies(film)
             film_proxies.append(film_proxy)
 
         return film_proxies
 
 
-    @staticmethod
-    def _get_image_proxies(film: Film):
+    def get_image_proxies(self, film: Film):
 
         if film.image_ref:
             film.image_ref = ImageProxy.get_proxified_url(film.image_ref)
@@ -251,24 +251,41 @@ class FilmService:
 
         return film
 
-    @staticmethod
-    def update_series_id(series, film_refs: list[str]):
+    def update_column_for_films(self, column_name, column_value, film_page_refs):
+        """Updates a given column (e.g., 'series_id') for a list of films (based on their page_ref)."""
+        if not film_page_refs:
 
-        if not film_refs:
             return
 
+        # Step 1: Prepare data for upsert (using page_ref and the dynamic column to update)
+        data = [
+            {"page_ref": film_ref, column_name: column_value}
+            for film_ref in film_page_refs
+        ]
 
-        if not series:
-            print(f"Series with page_ref '{series.name}' not found.")
-            return
+        self.repo.upsert(
+            data,
+            cls_table=Film,
+            conflict_columns=["page_ref"],  # Conflict on the `page_ref` column
+            update_columns=[column_name]  # Dynamic column to update (e.g., `series_id`)
+        )
 
-        FilmRepository.update_series_ids(series, film_refs)
+        print(f"Successfully updated {len(film_page_refs)} films' {column_name}.")
 
+    async def _fetch_and_extract(self, film_ref: str, sem):
 
+        async with asyncio.Semaphore(sem):
+            try:
+                collector = FilmDetailCollector(film_ref)
+                await collector.fetch_page()
+                await collector.extract_details()
+                return collector
+            except Exception as e:
+                print(f"[ERROR] Failed to collect for {film_ref}: {e}")
+                return None
 
 
 if __name__ == "__main__":
     app = create_app()
     with app.app_context():
-       
         asyncio.run(FilmService.update_film('boogie-nights'))

@@ -1,8 +1,8 @@
-from flask_restx import Namespace, Resource, fields
 from flask import request
+from flask_restx import Namespace, Resource
 
 from api.controllers.api_models import film_model
-from api.services.film_rec_service import Film_Rec_Service
+from api.services.film_rec_service import FilmRecService
 
 api = Namespace('recommendations', description='Film rec operations')
 
@@ -17,7 +17,7 @@ class FilmList(Resource):
         if not film_ref:  # Ensure page_ref is provided
             api.abort(400, "Missing 'page_ref' parameter")
 
-        films = Film_Rec_Service.get_films_recommendations(film_ref, 12)
+        films = FilmRecService.get_films_recommendations(film_ref, 12)
 
         if films:
             return films

@@ -1,5 +1,6 @@
-from sklearn.preprocessing import LabelEncoder
 import numpy as np
+from sklearn.preprocessing import LabelEncoder
+
 
 class MetadataProcessor:
     def __init__(self):

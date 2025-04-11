@@ -1,12 +1,11 @@
 # api/models/__init__.py
-from api import db
 
+from .credit import Credit
+from .crew import Crew
 # Import all models here to avoid circular dependencies
 from .film import Film
-from .crew import Crew
-from .role import Role
 from .genre import Genre
-from .credit import Credit
+from .role import Role
 from .user import User
 
 __all__ = ['Film', 'Crew', 'Role', 'Genre', 'Credit', 'User']

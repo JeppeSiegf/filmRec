@@ -1,5 +1,4 @@
 import pytest
-import asyncio
 
 from api.dataCollectors.film_list_collector import FilmPaginateParser
 

@@ -3,11 +3,10 @@ import asyncio
 from api import create_app
 from api.dataCollectors.film_detail_collector import FilmDetailCollector
 from api.dataCollectors.film_list_collector import FilmListCollector
-from api.dataCollectors.series_collector import SeriesCollector
 from api.dataCollectors.member_collector import MemberListCollector
 from api.dataCollectors.ratings_collector import RatingsCollector
+from api.dataCollectors.series_collector import SeriesCollector
 from api.dataCollectors.user_list_collector import UserListCollector
-
 from api.services.film_service import FilmService
 from api.services.rating_service import RatingService
 from api.services.series_service import SeriesService
@@ -84,4 +83,3 @@ if __name__ == "__main__":
     app = create_app()
     with app.app_context():
         asyncio.run(DataIngestionService.ingest_series_list())
-

@@ -1,6 +1,6 @@
-from flask_restx import Namespace, Resource
-from flask import request, Response
 import requests
+from flask import request, Response
+from flask_restx import Namespace, Resource
 
 api = Namespace('proxy', description='Image proxy operations')
 

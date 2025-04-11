@@ -1,7 +1,5 @@
 import asyncio
 from typing import List
-import requests
-from bs4 import BeautifulSoup
 
 from api.dataCollectors.utils.paginate_parser import PaginateParser
 from api.dataCollectors.utils.sort_categories import ReleaseDateFilter, GenreFilter, FilmSorting
@@ -14,8 +12,6 @@ class FilmListCollector(PaginateParser):
         self.url = f"https://letterboxd.com/{user}/list/{title}/detail/"
         self.entries_per_page = 100
         self.stop_ref = stop_title
-
-
 
     async def fetch_film_list(self, decade: ReleaseDateFilter = None,
                               genres: List[GenreFilter] = None,

@@ -1,5 +1,6 @@
+from flask_restx import fields
+
 from api import api
-from flask_restx import fields, Model
 
 film_model = api.model('Film', {
     'page_ref': fields.String(required=True, description='Reference URL for the film'),
@@ -9,7 +10,7 @@ film_model = api.model('Film', {
     'title': fields.String(description='The film title'),
     'title_original': fields.String(description='Name of film in original language'),
     'description': fields.String(description='Synopsis of plot'),
-    'total_watches' : fields.Integer(description='Amount people who have logged the film'),
+    'total_watches': fields.Integer(description='Amount people who have logged the film'),
     'runtime': fields.Integer(description='Length of film'),
     'release_year': fields.Integer(description='Year of release'),
     'genres': fields.List(fields.String, description='List of genres'),
@@ -24,7 +25,6 @@ film_model = api.model('Film', {
     ),
     'roles': fields.List(fields.String, description='Crews role during production')
 })
-
 
 film_model_simple = api.model('Search_Result', {
     'page_ref': fields.String(required=True, description='Reference URL for the film'),

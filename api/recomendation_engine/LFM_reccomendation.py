@@ -1,12 +1,10 @@
 import os
 from datetime import time
 
+import numpy as np
 import psutil
 from lightfm import LightFM
 from lightfm.data import Dataset
-
-from scipy.sparse import csr_matrix
-import numpy as np
 
 from api import create_app
 from api.recomendation_engine.recommendation_base import BaseRecommender
@@ -83,7 +81,6 @@ class LFMRecommender(BaseRecommender):
 
 
 if __name__ == '__main__':
-
     app = create_app()
     with app.app_context():
         recommender = LFMRecommender()

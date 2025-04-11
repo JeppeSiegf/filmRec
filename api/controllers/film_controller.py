@@ -1,13 +1,8 @@
-import asyncio
-from datetime import datetime
-from flask_restx import Namespace, Resource, fields
 from flask import request
+from flask_restx import Namespace, Resource
 
 from api.controllers.api_models import film_model, film_model_simple
-from api.controllers.genre_controller import Genre
-from api.dataCollectors.film_detail_collector import FilmDetailCollector
 from api.services.film_service import FilmService
-from api.models.film import Film
 
 api = Namespace('films', description='Film operations')
 
@@ -58,6 +53,7 @@ class FilmByCrewMember(Resource):
             return film
         api.abort(404, "Film not found")
 
+
 @api.route('/latest')
 @api.response(404, 'Film not found')
 class FilmResource(Resource):
@@ -68,6 +64,8 @@ class FilmResource(Resource):
         if film:
             return film
         api.abort(404, "Film not found")
+
+
 @api.route('/<string:page_ref>')
 @api.response(404, 'Film not found')
 @api.param('page_ref', 'The film reference')
@@ -75,8 +73,7 @@ class FilmResource(Resource):
     @api.marshal_with(film_model)
     def get(self, page_ref):
         """Fetch a film given its reference"""
-        film = FilmService.get_film_by_page_ref(page_ref,True)  # Call the service method synchronously
+        film = FilmService.get_film_by_page_ref(page_ref, True)  # Call the service method synchronously
         if film:
             return film
         api.abort(404, "Film not found")
-

@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import Sequence
+
 from api import db
 
 
@@ -22,16 +23,13 @@ class Film(db.Model):
     release_year = db.Column(db.Integer)
     runtime = db.Column(db.Integer)
 
-
     # Relationships
     genres = db.relationship('Genre', secondary='film_genre', backref=db.backref('films', lazy='dynamic'))
-    languages = db.relationship('Language', secondary='film_language',backref=db.backref('films', lazy='dynamic'))
+    languages = db.relationship('Language', secondary='film_language', backref=db.backref('films', lazy='dynamic'))
     credits = db.relationship('Credit', back_populates='film')
 
     series_id = db.Column(db.Integer, db.ForeignKey('series.id'))
     series = db.relationship('Series', back_populates='films')
-
-
 
     # For create
     @staticmethod
@@ -70,7 +68,6 @@ class Film(db.Model):
     # For updates, using a FilmDetailCollector instance.
     @staticmethod
     def map_film_detailed(film_detail):
-
 
         if not hasattr(film_detail, 'ref'):
             raise ValueError("Expected a FilmDetailCollector instance with attribute 'ref'.")

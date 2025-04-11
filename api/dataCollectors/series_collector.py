@@ -76,6 +76,7 @@ class SeriesCollector(PaginateParser):
 
         return collection_metadata
 
+
 async def main():
     collector = SeriesCollector()
     await collector.fetch_series_list()

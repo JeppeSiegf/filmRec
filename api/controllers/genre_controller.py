@@ -1,4 +1,5 @@
 from flask_restx import Namespace, Resource, fields
+
 from api.services.genre_service import GenreService
 
 api = Namespace('genres', description='Genre operations')

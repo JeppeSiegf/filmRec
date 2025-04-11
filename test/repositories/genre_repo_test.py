@@ -1,8 +1,8 @@
-import pytest
 from sqlalchemy.exc import SQLAlchemyError
+
+from api import db
 from api.models.genre import Genre
 from api.repositories.genre_repository import GenreRepository
-from api import db
 
 
 class TestGenreRepository:

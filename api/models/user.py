@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, Date
+from sqlalchemy import Column, Integer, String
+
 from api import db
 
 
@@ -12,11 +13,8 @@ class User(db.Model):
     username = Column(String(500))  # Username (can be NULL)
     last_updated = Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # Last update date
 
-    from datetime import datetime
-
     @staticmethod
     def map(user_tuple):
-
         if not isinstance(user_tuple, (list, tuple)):
             raise ValueError("Expected a tuple or list.")
 

@@ -1,7 +1,8 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, Boolean, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
+
 from api import db
 
 
@@ -18,8 +19,6 @@ class Rating(db.Model):
     # Relationships
     user = relationship('User', backref='ratings', foreign_keys=[user_id])  # Ensure this matches the user_id
     film = relationship('Film', backref='ratings', foreign_keys=[film_id])  # Relationship to Film
-
-    from datetime import datetime
 
     @staticmethod
     def map(rating_tuple):

@@ -9,6 +9,7 @@ class FilmSeriesCollector(ReqeustInterceptor):
     def __init__(self, collection):
         super().__init__()
         self.base_url = f"https://letterboxd.com/films/in/{collection}/"
+
     async def format_data(self, raw_data):
 
         film_data = []
@@ -19,7 +20,6 @@ class FilmSeriesCollector(ReqeustInterceptor):
 
             poster_match = poster_pattern.search(url)
             if poster_match:
-
                 film_ref = poster_match.group(1)
                 film_data.append(film_ref)
 

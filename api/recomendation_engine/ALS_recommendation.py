@@ -1,8 +1,8 @@
 import os
-import pickle
+
 import numpy as np
-from scipy.sparse import csr_matrix
 from implicit.als import AlternatingLeastSquares
+from scipy.sparse import csr_matrix
 
 from api.recomendation_engine.recommendation_base import BaseRecommender
 from api.services.rating_service import RatingService
@@ -11,7 +11,7 @@ from api.services.rating_service import RatingService
 class ALSRecommender(BaseRecommender):
     def __init__(self, n_components=100, n_trees=100,
                  n_epochs=20, reg_all=0.02, random_state=42):
-        super().__init__(n_components, n_trees,)
+        super().__init__(n_components, n_trees, )
         self.folder_path = os.path.join(self.base_dir, "models", "ALS")
         self.model = AlternatingLeastSquares(
             factors=n_components,
@@ -66,9 +66,6 @@ class ALSRecommender(BaseRecommender):
         similar = self.get_similar_items(film_id, k, True)
         if similar:
             print(f"[INFO] Similar items to '{film_id}': {similar}")
-
-
-
 
 
 # Run this as a script for manual testing

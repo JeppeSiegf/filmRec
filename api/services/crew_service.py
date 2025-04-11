@@ -1,53 +1,63 @@
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
-
-from api.models import Role
-from api.models.credit import Credit
+from api.models import Crew, Credit, Role
 from api.repositories.crew_repository import CrewRepository
-from api.models.crew import Crew
 
 
 class CrewService:
 
+    def __init__(self):
+        self.repo = CrewRepository()
 
-    @staticmethod
-    def get_credits_by_crew_ref(crew_ref):
-        return CrewRepository.get_credits_by_crew_ref(crew_ref)
 
-    @staticmethod
-    def add_film_credits_bulk(film_ref, crew_data):
+
+    def get_credits_by_crew_ref(self, crew_ref):
+        return self.repo.get_credits_by_crew_ref(crew_ref)
+
+    def add_film_credits_bulk(self, credits: list[tuple[str, list[dict]]]):
         try:
-            # Extract role names as strings (not dictionaries)
-            role_names = [member["role"] for member in crew_data]  # e.g., ['actor', 'director']
-            CrewRepository.update_film_roles(role_names)
 
-            # Map crew and credits data
-            crew_mappings = [
-                {"page_ref": member["ref"], "name": member["name"]}
-                for member in crew_data
-            ]
+            all_roles = []
+            for _, crew_data in credits:
+                for member in crew_data:
+                    all_roles.append(member["role"])
 
-            if crew_mappings:
-                CrewRepository.bulk_create_crew(crew_mappings)
+            # Step 2: Update all roles in bulk
+            self.repo.insert(all_roles, Role, self.role_conflicts)  # Ensure roles are up-to-date
 
-            credits_mappings = [
-                {
-                    "film_id": film_ref,
-                    "crew_id": member["ref"],  # Using crew.ref as the identifier
-                    "role_id": CrewRepository.get_role_ref_by_name(member["role"]).id,  # Get role ID based on role name
-                    "rank": member["rank"]
-                }
-                for member in crew_data
-            ]
+            # Step 3: Prepare crew data for insertion
+            all_crew_mappings = []
+            all_credits_mappings = []
 
-            # Call the helper method to upsert the credits into the database
-            CrewRepository.upsert_credits(credits_mappings)
+            for film_ref, crew_data in credits:
+                crew_mappings = [
+                    {
+                        "page_ref": member["ref"],
+                        "name": member["name"]
+                    }
+                    for member in crew_data
+                ]
+                all_crew_mappings.extend(crew_mappings)
 
-            print(f"Credits upserted: {len(crew_data)} created, {len(crew_data)} updated.")
+                credits_mappings = [
+                    {
+                        "film_id": film_ref,
+                        "crew_id": member["ref"],
+                        "role_id": self.repo.get_role_ref_by_name(member["role"]).id,
+                        "rank": member["rank"]
+                    }
+                    for member in crew_data
+                ]
+                all_credits_mappings.extend(credits_mappings)
+
+            # Step 4: Bulk insert crew members
+            if all_crew_mappings:
+                self.repo.insert(all_crew_mappings, Crew, self.crew_conflicts)
+
+            # Step 5: Upsert all credits in bulk
+            if all_credits_mappings:
+                self.repo.upsert(all_credits_mappings, Credit, self.credit_conflicts, self.credit_updates)
+
+            print(f"Credits upserted: {len(all_credits_mappings)} created, {len(all_credits_mappings)} updated.")
 
         except Exception as e:
             print(f"Error during credit upsert: {e}")
             raise
-
-
-
-

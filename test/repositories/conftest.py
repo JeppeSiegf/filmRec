@@ -1,6 +1,8 @@
 from datetime import datetime
+
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
+
 from api import db, create_app
 from api.models import User
 from api.models.film import Film

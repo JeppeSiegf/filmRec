@@ -1,5 +1,5 @@
-import asyncio
 from abc import abstractmethod
+
 from playwright.async_api import async_playwright
 
 
@@ -48,5 +48,5 @@ class ReqeustInterceptor():
                 print(f"Error processing response: {e}")
 
     @abstractmethod
-    async def format_data(self, raw_data) :
+    async def format_data(self, raw_data):
         pass

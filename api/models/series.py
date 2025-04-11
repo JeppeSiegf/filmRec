@@ -1,5 +1,5 @@
-
 from api import db
+
 
 class Series(db.Model):
     __tablename__ = 'series'

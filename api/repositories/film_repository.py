@@ -9,14 +9,33 @@ from api import db
 from api.models import Crew, Role
 from api.models.credit import Credit
 from api.models.film import Film
-from api.models.genre import Genre, film_genre
-from api.models.language import film_language, Language
+from api.models.genre import Genre
+from api.models.language import Language
+from api.repositories.utils.bulk_persisting import BulkPersistence
 
 
-class FilmRepository:
+class FilmRepository(BulkPersistence):
+
+    def __init__(self):
+        super().__init__()
+        self.cls_table = Film
+        self.conflict_columns = ['page_ref']
+        self.update_columns = [
+            'title',
+            'title_original',
+            'description',
+            'image_ref',
+            'image_ref_large',
+            'banner_ref',
+            'release_year',
+            'runtime',
+            'total_watches',
+            'last_update',
+        ]
+
     # CRUD
-    @staticmethod
-    def get_all_films():
+
+    def get_all_films(self):
 
         try:
             return Film.query.filter().all()
@@ -24,8 +43,8 @@ class FilmRepository:
             print(f"Database error: {e}")
             return []
 
-    @staticmethod
-    def get_newest_film():
+
+    def get_newest_film(self):
 
         result = Film.query.order_by(Film.last_update.desc(), Film.id.desc()).first()
         return result
@@ -78,7 +97,6 @@ class FilmRepository:
             print(f"Database error: {e}")
             return None
 
-
     @staticmethod
     def get_films_by_refs_with_crew(page_refs):
 
@@ -126,7 +144,7 @@ class FilmRepository:
             return []  # Return empty list on error
 
     @staticmethod
-    def get_films_by_refs_without_crew(page_refs: list[str]):
+    def get_films_by_refs_without_crew(page_refs):
         if not page_refs:
             return []
 
@@ -156,41 +174,7 @@ class FilmRepository:
             return []
 
 
-    @staticmethod
-    def create_film(film):
 
-        FilmRepository._validate_film(film)
-
-        try:
-
-            db.session.add(film)
-            db.session.commit()
-            return film
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            print(f"Database error: {e}")
-            return None
-
-
-    @staticmethod
-    def bulk_insert_films(film_data):
-
-        if not film_data:
-            print("No film data provided.")
-            return []
-
-        stmt = insert(Film).values(film_data)
-        stmt = stmt.on_conflict_do_nothing(index_elements=["page_ref"])
-
-        try:
-            db.session.execute(stmt)
-            db.session.commit()
-            print("Inserted films (duplicates were skipped).")
-            return film_data
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            print(f"Database error during bulk insert: {e}")
-            return []
 
     @staticmethod
     def update_film(film_id, updates):
@@ -225,7 +209,6 @@ class FilmRepository:
             # Always update the last_update timestamp
             film.last_update = datetime.utcnow()
 
-
             # Commit all changes at once
             db.session.commit()
             db.session.refresh(film)
@@ -235,76 +218,6 @@ class FilmRepository:
             print(f"Error updating film {film_id}: {e}")
             db.session.rollback()
             return None
-
-    @staticmethod
-    def delete_film(page_ref):
-        try:
-            film = Film.query.filter_by(page_ref=page_ref).first()
-            if film:
-                db.session.delete(film)
-                db.session.commit()
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            print(f"Database error: {e}")
-
-
-    @staticmethod
-    def _validate_film(film):
-        required_fields = ['title', 'page_ref', 'last_update']
-        for field in required_fields:
-            if getattr(film, field, None) is None:
-                raise ValueError(f"Film is missing required field: {field}")
-
-    @staticmethod
-    def update_series_ids(series, film_page_refs):
-        Film.query.filter(Film.page_ref.in_(film_page_refs)).update(
-            {Film.series_id: series.id},
-            synchronize_session=False
-        )
-        db.session.commit()
-
-
-    @staticmethod
-    def bulk_insert_ignore_conflict(model, unique_field: str, values: list[str]) -> None:
-
-        if not values:
-            return
-        insert_data = [{unique_field: val} for val in values]
-        try:
-            stmt = insert(model).values(insert_data)
-            stmt = stmt.on_conflict_do_nothing(index_elements=[unique_field])
-            db.session.execute(stmt)
-            db.session.flush()  # flush so that any new rows get assigned an ID
-        except Exception as e:
-            db.session.rollback()
-            print(f"Error during bulk insert on {model.__name__}: {e}")
-            raise
-
-    @staticmethod
-    def insert_association_entries(association_table, entries: list[dict]) -> None:
-
-        if not entries:
-            return
-        try:
-            stmt = insert(association_table).values(entries)
-            stmt = stmt.on_conflict_do_nothing()  # Skips duplicates
-            db.session.execute(stmt)
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            print(f"Error inserting association entries: {e}")
-            raise
-
-    @staticmethod
-    def get_languages(language_names):
-
-        return Language.query.filter(Language.language.in_(language_names)).all()
-
-    @staticmethod
-    def get_genres(genre_names):
-
-        return Genre.query.filter(Genre.genre.in_(genre_names)).all()
-
 
 
 

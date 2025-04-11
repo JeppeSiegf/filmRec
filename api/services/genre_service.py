@@ -1,29 +1,53 @@
+from api import db
+from api.models.genre import Genre, film_genre
+from api.repositories.film_repository import FilmRepository
 from api.repositories.genre_repository import GenreRepository
-from api.models.genre import Genre
 
 
 class GenreService:
 
-    @staticmethod
-    def get_all_genres():
-        return GenreRepository.get_all_genres()
+    def __init__(self):
+        self.repo = GenreRepository()
 
-    @staticmethod
-    def get_genre_by_id(genre_id):
+
+    def get_all_genres(self):
+        return self.repo.get_all_genres()
+
+
+    def get_genre_by_id(self, genre_id):
         return GenreRepository.get_genre_by_id(genre_id)
 
-    @staticmethod
-    def create_genre(genre: Genre):
-        if not isinstance(genre, Genre):
-            raise TypeError("Expected a Genre instance.")
-        return GenreRepository.create_genre(genre)
+    def update_film_genres(self, film_genre_pairs: list[tuple[str, list[str]]]):
 
-    @staticmethod
-    def update_genre(genre: Genre):
-        if not isinstance(genre, Genre):
-            raise TypeError("Expected a Genre instance.")
-        return GenreRepository.update_genre(genre)
+        try:
+            # Flatten all genre names into one set to bulk insert
+            unique_genres = set()
+            for _, genres in film_genre_pairs:
+                unique_genres.update(genres)
 
-    @staticmethod
-    def delete_genre(genre_id):
-        return GenreRepository.delete_genre(genre_id)
+            # Insert all genres, skipping existing ones
+            self.repo.insert(list(unique_genres))
+
+            # Map genre name to Genre object
+            genre_objs = GenreRepository.get_all_genres()
+            genre_lookup = {g.genre: g.id for g in genre_objs}
+
+            # Build bulk association entries
+            association_entries = []
+            for film_ref, genres in film_genre_pairs:
+                for genre in genres:
+                    genre_id = genre_lookup.get(genre)
+                    if genre_id:
+                        association_entries.append({'film_id': film_ref, 'genre_id': genre_id})
+
+            # Insert associations, skipping duplicates
+            self.repo.insert(association_entries,
+                             self.repo.assoc_table,
+                             self.repo.assoc_conflicts_columns
+                             )
+
+            return association_entries
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error in bulk genre update: {e}")
+            raise

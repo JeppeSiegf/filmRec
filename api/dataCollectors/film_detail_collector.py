@@ -1,7 +1,5 @@
 import asyncio
-import os
 import re
-import urllib.parse
 from json import loads
 
 import aiohttp
@@ -246,7 +244,7 @@ class FilmDetailCollector(PageParser):
                         else:
                             current_role = role
                             count = 1
-                            rank = count# Extract role from URL
+                            rank = count  # Extract role from URL
 
                         ref = href_parts[-2]  # Extract reference from URL
                         name = crew_link.text.strip()
@@ -288,8 +286,7 @@ class FilmDetailCollector(PageParser):
         except (KeyError, ValueError):
             self.release_year = None
 
-    async def resize_poster(self, poster_ref):
-        pass
+
 
     async def get_banner(self, dom):
         banner_div = dom.find('div', id='backdrop')

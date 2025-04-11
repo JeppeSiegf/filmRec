@@ -10,7 +10,6 @@ class Credit(db.Model):
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)
     rank = db.Column(db.Integer)
 
-
     # Relationships
     film = db.relationship('Film', back_populates='credits', lazy='joined')
     crew = db.relationship('Crew', back_populates='credits', lazy='joined')

@@ -3,8 +3,18 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from api import db
 from api.models.series import Series
+from api.repositories.utils.bulk_persisting import BulkPersistence
 
-class SeriesRepository:
+
+class SeriesRepository(BulkPersistence):
+
+    def __init__(self):
+        super().__init__()
+        self.cls_table = Series
+        self.conflict_columns = ['page_ref']
+        self.update_columns = ['name']
+
+
 
     @staticmethod
     def get_all():

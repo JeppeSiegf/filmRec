@@ -1,34 +1,22 @@
-from api.repositories.user_repository import UserRepository
-
-from api.repositories.user_repository import UserRepository
 from api.models.user import User
+from api.repositories.user_repository import UserRepository
 
 
 class UserService:
 
-    @staticmethod
-    def get_all_users():
-        return UserRepository.get_all_users()
+    def __init__(self):
+        self.repo = UserRepository()
 
-    @staticmethod
-    def get_user_by_profile_ref(profile_ref):
-        return UserRepository.get_user_by_profile_ref(profile_ref)
+    def get_all_users(self):
+        return self.repo.get_all_users()
 
+    def get_user_by_profile_ref(self, profile_ref):
+        return self.repo.get_user_by_profile_ref(profile_ref)
 
-    @staticmethod
-    def create_user(user: User):
-        if not isinstance(user, User):
-            raise TypeError("Expected a User instance.")
+    def get_user_by_profile_refs(self, user_refs):
+        return self.repo.get_user_by_profile_refs(user_refs)
 
-        existing_film = UserRepository.get_user_by_profile_ref(user.profile_ref)
-        if existing_film:
-            print('already in db')
-            return None  # Raise an exception if the film does not exist
-
-        return UserRepository.create_user(user)
-
-    @staticmethod
-    async def create_multiple_users(user_tuple):
+    async def create_multiple_users(self, user_tuple):
 
         if not isinstance(user_tuple, list):
             raise TypeError("Expected a list of tuples.")
@@ -42,21 +30,6 @@ class UserService:
             print("No valid films to insert.")
             return []
 
-        inserted_films = UserRepository.bulk_insert(user_data)
+        inserted_films = self.repo.insert(user_data)
 
         return inserted_films
-
-    @staticmethod
-    def update_user(user: User):
-        if not isinstance(user, User):
-            raise TypeError("Expected a User instance.")
-        return UserRepository.update_user(user.profile_ref, user)
-    @staticmethod
-    async def update_multiple_user(users):
-
-        for user in users:
-            await UserRepository.update_user(user.profile_ref, users)
-
-    @staticmethod
-    def delete_user(user_id):
-        return UserRepository.delete_user(user_id)

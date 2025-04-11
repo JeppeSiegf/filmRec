@@ -2,35 +2,30 @@ from datetime import datetime
 
 import pandas as pd
 
-from api import db
-from api.repositories.rating_repository import RatingRepository
+from api.models.film import Film
 from api.models.rating import Rating
 from api.models.user import User
-from api.models.film import Film
+from api.repositories.rating_repository import RatingRepository
 from api.services.film_service import FilmService
 from api.services.user_service import UserService
 
 
 class RatingService:
 
-    @staticmethod
-    def get_all_ratings():
-        return RatingRepository.get_all_ratings()
+    def __init__(self):
 
-    @staticmethod
-    def get_latest_rating_by_user(user_id):
-        return RatingRepository.get_latest_rating_by_user(user_id)
+        self.repo = RatingRepository()
+        self.user_service = UserService()
+        self.film_service = FilmService()
 
 
-    @staticmethod
-    def create_rating(rating: Rating):
-        if not isinstance(rating, Rating):
-            raise TypeError("Expected a Rating instance.")
-        return RatingRepository.create_rating(rating)
+    def get_all_ratings(self):
+        return self.repo.get_all_ratings()
 
+    def get_latest_rating_by_user(self, user_id):
+        return self.repo.get_latest_rating_by_user(user_id)
 
-    @staticmethod
-    def upsert_user_ratings(rating_data: list[tuple]) -> list[dict]:
+    def upsert_user_ratings(self, rating_data: list[tuple]) -> list[dict]:
 
         if not rating_data:
             return []
@@ -40,11 +35,13 @@ class RatingService:
         film_refs = {r[1] for r in rating_data}
 
         # Fetch all users and films with one query each
-        users = User.query.filter(User.profile_ref.in_(user_refs)).all()
-        films = Film.query.filter(Film.page_ref.in_(film_refs)).all()
 
-        user_map = {u.profile_ref: u for u in users}
-        film_map = {f.page_ref: f for f in films}
+        valid_users = self.user_service.get_user_by_profile_refs(user_refs)
+
+        valid_films = self.film_service.get_films_by_refs(film_refs, False)
+
+        user_map = {u.profile_ref: u for u in valid_users}
+        film_map = {f.page_ref: f for f in valid_films}
 
         # Filter ratings that have both a valid user and film
         valid_ratings = [
@@ -55,42 +52,12 @@ class RatingService:
             print("No valid ratings to process.")
             return []
 
-        # Step 4: Create set of (film_id, user_id) pairs for lookup
-        film_user_keys = {
-            (film_map[r[1]].page_ref, user_map[r[0]].profile_ref) for r in valid_ratings
-        }
+            # Build rating objects for upsert
+        to_upsert = self.build_ratings_for_upsert(valid_ratings, user_map, film_map)
 
-        # Step 5: Get existing rating map
-        existing_map = RatingRepository.get_existing_rating_map_bulk(film_user_keys)
-
-        to_upsert = []
-
-        # Step 6: Build rating objects for upsert
-        for user_ref, film_ref, rating_value, liked in valid_ratings:
-            user_id = user_map[user_ref].profile_ref
-            film_id = film_map[film_ref].page_ref
-            key = (film_id, user_id)
-
-            if key in existing_map:
-                # Update existing rating
-                rating = existing_map[key]
-                rating.rating = rating_value
-                rating.liked = liked
-                rating.rating_date = datetime.utcnow()
-                to_upsert.append(rating)
-            else:
-                # Create new rating
-                to_upsert.append({
-                    "user_id": user_id,
-                    "film_id": film_id,
-                    "rating": rating_value,
-                    "liked": liked,
-                    "rating_date": datetime.utcnow()
-                })
-
-        # Step 7: Commit using repository
+        # Step 7: Commit using the bulk_upsert_ratings method
         try:
-            RatingRepository.bulk_upsert_ratings(to_upsert)
+            self.repo.upsert(to_upsert)
             print(f"Upserted {len(to_upsert)} ratings.")
         except Exception as e:
             print(f"Error during bulk rating upsert: {e}")
