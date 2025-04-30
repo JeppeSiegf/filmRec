@@ -11,7 +11,7 @@ class RatingRepository(BulkPersistence):
         super().__init__()
         self.cls_table = Rating
         self.conflict_columns = ['user_id', 'film_id']
-        self.update_columns = ['rating', 'liked''rating_date']
+        self.update_columns = ['rating', 'liked', 'rating_date']
 
     def get_all_ratings(self):
         return Rating.query.all()

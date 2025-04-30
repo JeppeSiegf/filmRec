@@ -12,6 +12,7 @@ from api.dataCollectors.utils.sort_categories import RatingRangeFilter, SingleRa
 class MemberListCollector(PaginateParser):
     def __init__(self, film_ref: str) -> None:
         super().__init__()
+        self.film_ref = film_ref
         self.url = f"https://letterboxd.com/film/{film_ref}/members/"
         self.entries_per_page = 25
         self.users = []
@@ -53,7 +54,7 @@ class MemberListCollector(PaginateParser):
             rating = await self.__extract_rating(user_row)
             like = await self.__extract_like(user_row)
 
-            member_list.append([user_name, user_url.strip('/'), rating, like])
+            member_list.append([user_name, user_url.strip('/'), self.film_ref, rating, like])
         return member_list
 
     async def __extract_rating(self, user_row) -> int:
@@ -89,13 +90,14 @@ class MemberListCollector(PaginateParser):
 
     def __split_member_list(self, member_list):
         self.users = [member[0:2] for member in member_list]
-        self.ratings = [member[1:4] for member in member_list]
+        self.ratings = [member[1:5] for member in member_list]
 
 
 async def main():
     collector = MemberListCollector('maya-deren-take-zero')
     await collector.fetch_member_list()
     print(collector.users)
+    print(collector.ratings)
 
 
 if __name__ == "__main__":

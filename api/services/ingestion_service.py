@@ -1,4 +1,5 @@
 import asyncio
+from timeit import Timer
 
 from api import create_app
 from api.dataCollectors.film_detail_collector import FilmDetailCollector
@@ -15,71 +16,89 @@ from api.services.user_service import UserService
 
 class DataIngestionService:
 
-    @classmethod
-    async def ingest_film(cls, film_ref):
-        collector = FilmDetailCollector(film_ref)
-        await collector.fetch_page()
-        await collector.extract_details()
 
-        await FilmService.update_film(film_ref)
+    def ingest_film(self, film_refs):
 
-        return True
+        service = FilmService()
+        updated_films = []
 
-    @classmethod
-    async def ingest_film_list(cls, username, list_title):
+        #for film_ref in film_refs:
+         #   collector = FilmDetailCollector(film_ref)
+          #  asyncio.run(collector.fetch_page())
+           # asyncio.run(collector.extract_details())
+
+            # Assuming the collector object now has all the necessary fields
+            # and can be passed directly to update_multiple_films
+            #updated_films.append(collector)
+
+        asyncio.run(service.update_multiple_films(film_refs))
+
+    def ingest_film_list(self, username, list_title):
         collector = FilmListCollector(username, list_title)
+        service = FilmService()
 
-        await collector.fetch_film_list()
+        asyncio.run(collector.fetch_film_list())
 
         films = collector.items
 
-        await FilmService.create_multiple_films(films)
+        service.create_multiple_films(films)
 
-    @classmethod
-    async def ingest_user_list(cls, username):
+
+    def ingest_user_list(self, username):
+
         collector = UserListCollector(username)
+        service = UserService()
 
-        await collector.fetch_users_list()
+        asyncio.run(collector.fetch_users_list())
 
         users = collector.items
 
-        await UserService.create_multiple_users(users)
+        service.create_multiple_users(users)
 
-    @classmethod
-    async def ingest_member_list(cls, film_ref):
+
+    def ingest_member_list(self, film_ref):
         collector = MemberListCollector(film_ref)
+        user_service = UserService()
+        rating_service = RatingService()
 
-        await collector.fetch_member_list()
+        asyncio.run(collector.fetch_member_list())
 
         users = collector.users
         ratings = collector.ratings
 
-        await UserService.create_multiple_users(users)
-        await RatingService.upsert_user_ratings(ratings)
+        user_service.create_multiple_users(users)
+        rating_service.upsert_user_ratings(ratings)
 
-    @classmethod
-    async def ingest_ratings_list(cls, username):
+
+    def ingest_ratings_list(self, username):
         collector = RatingsCollector(username)
+        service = RatingService()
 
-        await collector.fetch_ratings_list()
+        asyncio.run(collector.fetch_ratings_list())
 
         ratings = collector.items
 
-        await RatingService.upsert_user_ratings(ratings)
+        service.upsert_user_ratings(ratings)
 
-    @classmethod
-    async def ingest_series_list(cls):
+    def ingest_series_list(self):
         # TODO implement service and db
         collector = SeriesCollector()
+        service = SeriesService()
 
-        await collector.fetch_series_list()
+        asyncio.run(collector.fetch_series_list())
 
         series = collector.items
 
-        await SeriesService.upsertFilmSeries(series)
+        service.upsertFilmSeries(series)
 
 
 if __name__ == "__main__":
     app = create_app()
     with app.app_context():
-        asyncio.run(DataIngestionService.ingest_series_list())
+
+        filmserv = FilmService()
+        films = filmserv.get_all_films()
+        print('gottem')
+        service = DataIngestionService()
+        service.ingest_film([f.page_ref for f in films])
+

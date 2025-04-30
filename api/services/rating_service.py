@@ -52,8 +52,17 @@ class RatingService:
             print("No valid ratings to process.")
             return []
 
-            # Build rating objects for upsert
-        to_upsert = self.build_ratings_for_upsert(valid_ratings, user_map, film_map)
+        to_upsert = [
+            {
+                'user_id': user_map[r[0]].profile_ref,
+                'film_id': film_map[r[1]].page_ref,
+                'rating': int(r[2]) if r[2] is not None else None,
+                'liked': bool(r[3]) if len(r) > 3 else (int(r[2]) >= 7 if r[2] is not None else False),
+                'rating_date': datetime.utcnow()
+            }
+            for r in valid_ratings
+        ]
+
 
         # Step 7: Commit using the bulk_upsert_ratings method
         try:

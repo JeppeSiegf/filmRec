@@ -25,11 +25,13 @@ class GenreService:
             for _, genres in film_genre_pairs:
                 unique_genres.update(genres)
 
+            genre_records = [{'genre': g} for g in unique_genres]
+
             # Insert all genres, skipping existing ones
-            self.repo.insert(list(unique_genres))
+            self.repo.insert(list(genre_records))
 
             # Map genre name to Genre object
-            genre_objs = GenreRepository.get_all_genres()
+            genre_objs = self.repo.get_all_genres()
             genre_lookup = {g.genre: g.id for g in genre_objs}
 
             # Build bulk association entries

@@ -7,7 +7,7 @@ from api.dataCollectors.utils.sort_categories import TimePeriodSort, UserSorting
 class UserListCollector(PaginateParser):
     def __init__(self, user: str = None) -> None:
         super().__init__()
-        self.entries_per_page = 30
+        self.entries_per_page = 25
         if user is None:
             self.url = 'https://letterboxd.com/members/popular/'
             self.user = None
@@ -51,7 +51,7 @@ class UserListCollector(PaginateParser):
 async def main():
     collector = UserListCollector('dtf')
 
-    await collector.fetch_users_list(timespan=TimePeriodSort.WEEK)
+    await collector.fetch_users_list()
 
     users_list = collector.items
     print(users_list)

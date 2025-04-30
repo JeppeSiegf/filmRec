@@ -20,6 +20,7 @@ film_model = api.model('Film', {
             'page_ref': fields.String(description="Reference URL for the crew member"),
             'name': fields.String(description="Crew member's name"),
             'role': fields.String(description="Role of the crew member"),
+            'rank': fields.Integer(description="Crew members spot on billing order")
         })),
 
     ),

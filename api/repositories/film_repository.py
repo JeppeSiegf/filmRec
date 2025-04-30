@@ -1,7 +1,6 @@
 from datetime import datetime
 
 from sqlalchemy import desc, func
-from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import aliased
 
@@ -9,8 +8,6 @@ from api import db
 from api.models import Crew, Role
 from api.models.credit import Credit
 from api.models.film import Film
-from api.models.genre import Genre
-from api.models.language import Language
 from api.repositories.utils.bulk_persisting import BulkPersistence
 
 
@@ -72,14 +69,16 @@ class FilmRepository(BulkPersistence):
                         func.json_build_object(
                             'page_ref', crew_alias.page_ref,
                             'name', crew_alias.name,
-                            'role', role_alias.role
+                            'role', role_alias.role,
+                            'rank', credit_alias.rank,
                         )
                     ).label("crew_members")
                 )
                 .outerjoin(credit_alias, credit_alias.film_id == Film.page_ref)
                 .outerjoin(role_alias, role_alias.id == credit_alias.role_id)
                 .outerjoin(crew_alias, crew_alias.page_ref == credit_alias.crew_id)
-                .filter(Film.page_ref == page_ref)  # Exact match on page_ref
+                .filter(Film.page_ref == page_ref)
+                .filter(credit_alias.rank.isnot(None))
                 .group_by(Film.page_ref)
             )
 
@@ -117,14 +116,16 @@ class FilmRepository(BulkPersistence):
                         func.json_build_object(
                             'page_ref', crew_alias.page_ref,
                             'name', crew_alias.name,
-                            'role', role_alias.role
+                            'role', role_alias.role,
+                            'rank', credit_alias.rank
                         )
                     ).label("crew_members")
                 )
                 .outerjoin(credit_alias, credit_alias.film_id == Film.page_ref)
                 .outerjoin(role_alias, role_alias.id == credit_alias.role_id)
                 .outerjoin(crew_alias, crew_alias.page_ref == credit_alias.crew_id)
-                .filter(Film.page_ref.in_(page_refs))  # Filter by the input list
+                .filter(Film.page_ref.in_(page_refs))
+                .filter(credit_alias.rank.isnot(None))# Filter by the input list
                 .group_by(Film.page_ref)  # Group by film to aggregate crew
             )
 
@@ -173,51 +174,6 @@ class FilmRepository(BulkPersistence):
             print(f"Error in search_films2: {e}")
             return []
 
-
-
-
-    @staticmethod
-    def update_film(film_id, updates):
-        """
-        Update a film using the current Flask request context session.
-        This version updates all columns provided in the updates dictionary,
-        except for the film's primary key and page_ref.
-        """
-        try:
-            # Get the film by its page_ref
-            film = Film.query.filter_by(page_ref=film_id).first()
-            if not film:
-                print(f"Film {film_id} not found.")
-                return None
-
-            # If updates is an object, convert to a dictionary
-            if hasattr(updates, '__dict__'):
-                updates = {k: v for k, v in vars(updates).items() if not k.startswith('_')}
-
-            # Define fields to skip from updates (e.g., primary key and immutable fields)
-            skip_fields = {"page_ref", "id", "genres", "languages", "crew", "cast"}
-
-            # Loop through updates and update film attributes if they exist on the film model
-            for key, value in updates.items():
-                if key in skip_fields:
-                    continue
-                if hasattr(film, key):
-                    setattr(film, key, value)
-                    # Optionally, use flag_modified if you need to force the change tracking:
-                    # flag_modified(film, key)
-
-            # Always update the last_update timestamp
-            film.last_update = datetime.utcnow()
-
-            # Commit all changes at once
-            db.session.commit()
-            db.session.refresh(film)
-            return film
-
-        except Exception as e:
-            print(f"Error updating film {film_id}: {e}")
-            db.session.rollback()
-            return None
 
 
 

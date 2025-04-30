@@ -27,8 +27,10 @@ class LanguageService:
                     )
                 unique_language_names.update(lang["name"] for lang in languages)
 
+            language_records = [{'language': name} for name in unique_language_names]
+
             # Bulk insert languages (ignore duplicates)
-            self.repo.insert(list(unique_language_names))
+            self.repo.insert(list(language_records))
 
             # Get language objects and build name-to-id map
             language_objs = self.repo.get_by_languages_name(unique_language_names)

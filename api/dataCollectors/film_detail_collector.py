@@ -6,39 +6,10 @@ import aiohttp
 import unicodedata
 
 from api.dataCollectors.utils.page_parser import PageParser
+from api.dataCollectors.utils.session_manager import SessionManager
 
 
-class FilmDetailCollector(PageParser):
-    _shared_session = None
-
-    @classmethod
-    async def enable_shared_session(cls):
-        """
-        Enables a shared session with custom settings.
-        All subsequent FilmDetailCollector instances will reuse this session.
-        """
-        if cls._shared_session is None or cls._shared_session.closed:
-            timeout = aiohttp.ClientTimeout(
-                total=None,
-                connect=300,
-                sock_connect=300,
-                sock_read=300
-            )
-            connector = aiohttp.TCPConnector(limit_per_host=20, force_close=False, ssl=False)
-            cls._shared_session = aiohttp.ClientSession(
-                connector=connector,
-                timeout=timeout,
-                headers={'Connection': 'keep-alive'}
-            )
-
-    @classmethod
-    async def disable_shared_session(cls):
-        """
-        Closes and clears the shared session.
-        """
-        if cls._shared_session and not cls._shared_session.closed:
-            await cls._shared_session.close()
-            cls._shared_session = None
+class FilmDetailCollector(PageParser, SessionManager):
 
     def __init__(self, film_ref: str) -> None:
         if not isinstance(film_ref, str):
@@ -66,25 +37,9 @@ class FilmDetailCollector(PageParser):
         self.cast = {}
 
     async def fetch_page(self, session: aiohttp.ClientSession = None):
-        """
-        Fetches and parses the film page.
-        If a session is provided, that session is used.
-        Otherwise, a new session is created and closed after use.
-        """
+
         if session is None:
-            # Create a temporary session with custom settings.
-            timeout = aiohttp.ClientTimeout(
-                total=None,
-                connect=300,
-                sock_connect=300,
-                sock_read=300
-            )
-            connector = aiohttp.TCPConnector(limit_per_host=20, force_close=False, ssl=False)
-            async with aiohttp.ClientSession(
-                    connector=connector,
-                    timeout=timeout,
-                    headers={'Connection': 'keep-alive'}
-            ) as temp_session:
+            async with aiohttp.ClientSession() as temp_session:
                 self.dom = await self.get_parsed_page(temp_session, self.url)
         else:
             self.dom = await self.get_parsed_page(session, self.url)
@@ -116,6 +71,9 @@ class FilmDetailCollector(PageParser):
                 self.get_banner(self.dom),
 
             )
+        self.dom = None
+        self.script = None
+
 
     async def get_title(self, dom):
         # Find the <h1> element with the class "headline-1 primaryname"

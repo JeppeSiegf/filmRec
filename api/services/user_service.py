@@ -16,7 +16,7 @@ class UserService:
     def get_user_by_profile_refs(self, user_refs):
         return self.repo.get_user_by_profile_refs(user_refs)
 
-    async def create_multiple_users(self, user_tuple):
+    def create_multiple_users(self, user_tuple):
 
         if not isinstance(user_tuple, list):
             raise TypeError("Expected a list of tuples.")

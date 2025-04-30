@@ -1,5 +1,6 @@
 from abc import ABC
 
+from sqlalchemy import and_, or_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -20,8 +21,8 @@ class BulkPersistence(ABC):
             print("No data provided.")
             return []
 
-        cls_table = cls_table or self.cls_table
-        conflict_columns = conflict_columns or self.conflict_columns
+        cls_table = cls_table if cls_table is not None else self.cls_table
+        conflict_columns = conflict_columns if conflict_columns is not None else self.conflict_columns
 
         stmt = insert(cls_table).values(data)
         stmt = stmt.on_conflict_do_nothing(index_elements=conflict_columns)
@@ -42,19 +43,25 @@ class BulkPersistence(ABC):
             print("No data provided.")
             return []
 
-        cls_table = cls_table or self.cls_table
-        conflict_columns = conflict_columns or self.conflict_columns
-        update_columns = update_columns or self.update_columns
+        cls_table = cls_table if cls_table is not None else self.cls_table
+        table = cls_table.__table__ if hasattr(cls_table, '__table__') else cls_table
 
-        stmt = insert(cls_table).values(data)
+        conflict_columns = conflict_columns if conflict_columns is not None else self.conflict_columns
+        update_columns = update_columns if update_columns is not None else self.update_columns
 
+        stmt = insert(table).values(data)
         set_values = {col: stmt.excluded[col] for col in update_columns}
+
+        conditions = [
+            table.c[col].is_distinct_from(stmt.excluded[col])
+            for col in update_columns
+        ]
 
         stmt = stmt.on_conflict_do_update(
             index_elements=conflict_columns,
-            set_=set_values
+            set_=set_values,
+            where=or_(*conditions)
         )
-
         try:
             db.session.execute(stmt)
             db.session.commit()

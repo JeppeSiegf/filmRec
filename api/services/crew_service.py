@@ -7,6 +7,11 @@ class CrewService:
     def __init__(self):
         self.repo = CrewRepository()
 
+        self.role_conflicts = ['role']
+        self.crew_conflicts = ['page_ref']
+        self.credit_conflicts = ['film_id', 'crew_id', 'role_id']
+        self.credit_updates = ['rank']
+
 
 
     def get_credits_by_crew_ref(self, crew_ref):
@@ -15,15 +20,20 @@ class CrewService:
     def add_film_credits_bulk(self, credits: list[tuple[str, list[dict]]]):
         try:
 
-            all_roles = []
+            unique_roles = set()
             for _, crew_data in credits:
                 for member in crew_data:
-                    all_roles.append(member["role"])
+                    unique_roles.add(member["role"])
 
-            # Step 2: Update all roles in bulk
-            self.repo.insert(all_roles, Role, self.role_conflicts)  # Ensure roles are up-to-date
+            # Step 2: Insert all roles (skip duplicates)
+            role_records = [{"role": r} for r in unique_roles]
+            self.repo.insert(role_records, Role, self.role_conflicts)
 
-            # Step 3: Prepare crew data for insertion
+            # Fetch role objects to map role name -> ID
+            role_objs = self.repo.get_all_roles()
+            role_lookup = {r.role: r.id for r in role_objs}
+
+            # Prepare crew data for insertion
             all_crew_mappings = []
             all_credits_mappings = []
 
@@ -41,7 +51,7 @@ class CrewService:
                     {
                         "film_id": film_ref,
                         "crew_id": member["ref"],
-                        "role_id": self.repo.get_role_ref_by_name(member["role"]).id,
+                        "role_id": role_lookup.get(member["role"]),
                         "rank": member["rank"]
                     }
                     for member in crew_data

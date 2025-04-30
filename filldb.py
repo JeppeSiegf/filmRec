@@ -13,12 +13,15 @@ from api.services.film_service import FilmService
 from api.services.user_service import UserService
 
 app = create_app()
+film_service = FilmService()
 
 
 # Ad-hoc code for initial manual db populating database oo
 async def update_all_films():
-    films = FilmService.get_all_films()
-    await FilmService.update_multiple_films([f.page_ref for f in films])
+
+    films = film_service.get_all_films()
+    refs = [f[0] for f in films]
+    await film_service.update_multiple_films(refs)
     print('done2')
 
 

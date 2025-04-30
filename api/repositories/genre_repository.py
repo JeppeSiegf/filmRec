@@ -15,7 +15,7 @@ class GenreRepository(BulkPersistence):
         self.conflict_columns = ['genre']
 
         self.assoc_table = film_genre
-        self.assoc_conflicts_columns = ['film_id' 'genre_id']
+        self.assoc_conflicts_columns = ['film_id', 'genre_id']
 
     def get_all_genres(self):
 
@@ -24,7 +24,6 @@ class GenreRepository(BulkPersistence):
         except SQLAlchemyError as e:
             print(f"Database error: {e}")
             return None
-
 
     def get_genre_by_id(genre_id):
 

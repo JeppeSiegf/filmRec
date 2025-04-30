@@ -9,6 +9,8 @@ api = Namespace('recommendations', description='Film rec operations')
 
 @api.route('/')
 class FilmList(Resource):
+
+    service = FilmRecService()
     @api.marshal_list_with(film_model)
     @api.param('page_ref', 'The Reference to film which the recommendation should be based on')
     def get(self):
@@ -17,7 +19,7 @@ class FilmList(Resource):
         if not film_ref:  # Ensure page_ref is provided
             api.abort(400, "Missing 'page_ref' parameter")
 
-        films = FilmRecService.get_films_recommendations(film_ref, 12)
+        films = self.service.get_films_recommendations(film_ref, 12)
 
         if films:
             return films

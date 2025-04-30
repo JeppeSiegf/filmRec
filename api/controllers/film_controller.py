@@ -12,12 +12,14 @@ api = Namespace('films', description='Film operations')
 
 @api.route('/')
 class FilmList(Resource):
+    service = FilmService()
+
     @api.marshal_list_with(film_model_simple)
     @api.param('search_query', 'The search query to filter films by title or other attributes')
     def get(self):
         """List all films or search for films"""
         search_query = request.args.get('search_query', '')  # Retrieve the query parameter
-        films = FilmService.search_films(search_query)  # Call the service method synchronously
+        films = self.service.search_films(search_query)  # Call the service method synchronously
         if films:
             return films
         api.abort(404, "No matching films found")
@@ -33,7 +35,7 @@ class FilmList(Resource):
 
         try:
             # Call your service method to bulk upsert films
-            result = FilmService.create_multiple_films(films_data)
+            result = self.service.create_multiple_films(films_data)
 
             return result, 201
 
@@ -43,12 +45,14 @@ class FilmList(Resource):
 
 @api.route('/by')
 class FilmByCrewMember(Resource):
+    service = FilmService()
+
     @api.marshal_with(film_model)
     @api.param('director_ref', 'The reference of the director to filter films by')
     def get(self):
         """"Fetch films by director reference"""
         dir_ref = request.args.get('director_ref', '')
-        film = FilmService.get_films_by_crew_member(dir_ref)
+        film = self.service.get_films_by_crew_member(dir_ref)
         if film:
             return film
         api.abort(404, "Film not found")
@@ -57,10 +61,12 @@ class FilmByCrewMember(Resource):
 @api.route('/latest')
 @api.response(404, 'Film not found')
 class FilmResource(Resource):
+    service = FilmService()
+
     @api.marshal_with(film_model_simple)
     def get(self):
         """Fetch a film given its reference"""
-        film = FilmService.get_newest_film()  # Call the service method synchronously
+        film = self.service.get_newest_film()  # Call the service method synchronously
         if film:
             return film
         api.abort(404, "Film not found")
@@ -70,10 +76,12 @@ class FilmResource(Resource):
 @api.response(404, 'Film not found')
 @api.param('page_ref', 'The film reference')
 class FilmResource(Resource):
+    service = FilmService()
+
     @api.marshal_with(film_model)
     def get(self, page_ref):
         """Fetch a film given its reference"""
-        film = FilmService.get_film_by_page_ref(page_ref, True)  # Call the service method synchronously
+        film = self.service.get_film_by_page_ref(page_ref, True, True)  # Call the service method synchronously
         if film:
             return film
         api.abort(404, "Film not found")
