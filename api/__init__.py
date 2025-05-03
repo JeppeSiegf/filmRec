@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask
 from flask_cors import CORS
 from flask_restx import Api
@@ -11,7 +13,8 @@ api = Api()
 
 def create_app(config_class=Config):
     app = Flask(__name__)
-    app.config.from_object(config_class)
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     CORS(app)
 
