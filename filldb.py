@@ -6,9 +6,7 @@ import pandas as pd
 from api import create_app
 from api.dataCollectors.film_detail_collector import FilmDetailCollector
 from api.dataCollectors.utils.sort_categories import FilmSorting, RatingSorting
-from api.models.rating import Rating
 from api.models.user import User
-from api.recomendation_engine.ANNS_recommendation import RecommenderSystem
 from api.services.film_service import FilmService
 from api.services.user_service import UserService
 
