@@ -2,7 +2,7 @@ from abc import abstractmethod
 from playwright.async_api import async_playwright
 
 
-class ReqeustInterceptor():
+class ReqeustInterceptor:
     def __init__(self):
         self.base_url = ''
         self.collected_data = []
