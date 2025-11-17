@@ -7,4 +7,4 @@ COPY dataCollectors /app/dataCollectors
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["celery", "-A", "run:app", "worker", "--beat", "--loglevel=info"]"]
+CMD ["celery", "-A", "run:app", "worker", "--beat", "--loglevel=info"]
