@@ -4,7 +4,7 @@ from celery import Celery
 import os
 
 from celery.schedules import crontab
-from worker.services.update_log import UpdateLog
+from services.update_log import UpdateLog
 from services.requests import APIService
 
 broker_url = os.getenv("CELERY_BROKER_URL")

@@ -11,6 +11,6 @@ COPY worker/ /app/worker
 COPY dataCollectors /app/dataCollectors
 
 # Make sure Python can find top-level modules in /app/worker
-ENV PYTHONPATH=/app/worker
+ENV PYTHONPATH=/app
 
 CMD ["celery", "-A", "run:app", "worker", "--beat", "--loglevel=info"]
