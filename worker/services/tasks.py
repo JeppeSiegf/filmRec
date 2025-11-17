@@ -29,7 +29,8 @@ updating_db = False
 
 @app.task
 def test():
-    fetch_films('kordian86','all-the-movies-3')
+    wha = update_logger.get('gemko')
+    logger.info(f'stopping at : {wha}')
 
 
 @app.task
