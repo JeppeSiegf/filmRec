@@ -1,4 +1,5 @@
 FROM python:3.11-slim
+FROM python:3.11-slim
 
 WORKDIR /app/worker
 
@@ -10,7 +11,7 @@ RUN pip install --no-cache-dir -r /app/worker/requirements.txt
 COPY worker/ /app/worker
 COPY dataCollectors /app/dataCollectors
 
-# Make sure Python can find top-level modules in /app/worker
-ENV PYTHONPATH=/app/worker
+# Set PYTHONPATH so imports work from worker directory
+ENV PYTHONPATH=/app/worker:/app
 
-CMD ["celery", "-A", "worker.run:app", "worker", "--beat", "--loglevel=info"]
+CMD ["celery", "-A", "run:app", "worker", "--beat", "--loglevel=info"]
