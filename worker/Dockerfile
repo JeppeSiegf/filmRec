@@ -6,6 +6,7 @@ WORKDIR /app
 COPY worker /app/worker
 COPY dataCollectors /app/dataCollectors
 
+ENV PYTHONPATH=/app:/app/worker
 # Install requirements
 RUN pip install --no-cache-dir -r /app/worker/requirements.txt
 
