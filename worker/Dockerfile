@@ -1,13 +1,10 @@
 FROM python:3.11-slim
 
-WORKDIR /app
+WORKDIR /app/worker
 
-# Copy both directories from parent context
 COPY worker /app/worker
 COPY dataCollectors /app/dataCollectors
 
-ENV PYTHONPATH=/app:/app/worker
-# Install requirements
-RUN pip install --no-cache-dir -r /app/worker/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["sh", "-c", "sleep 5 && celery -A worker.run:app worker --beat --loglevel=info"]
+CMD ["celery", "-A", "run:app", "worker", "--beat", "--loglevel=info"]"]
