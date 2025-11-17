@@ -1,6 +1,6 @@
 import pytest
 
-from api.dataCollectors.ratings_collector import UserRatingsCollector  # Adjust to your actual import path
+from dataCollectors import UserRatingsCollector  # Adjust to your actual import path
 
 TEST_CASES = [
     {

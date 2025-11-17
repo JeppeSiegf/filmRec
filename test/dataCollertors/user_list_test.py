@@ -1,6 +1,6 @@
 import pytest
 
-from api.dataCollectors.user_list_collector import UserPaginateParser
+from dataCollectors.user_list_collector import UserPaginateParser
 
 TEST_CASES = [
     {

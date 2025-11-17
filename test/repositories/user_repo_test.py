@@ -3,8 +3,8 @@ from datetime import datetime
 from sqlalchemy.exc import SQLAlchemyError
 
 from api import db
-from api.models.user import User
-from api.repositories.user_repository import UserRepository
+from api import User
+from api import UserRepository
 
 
 class TestUserRepository:

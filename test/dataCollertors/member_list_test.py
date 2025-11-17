@@ -1,6 +1,6 @@
 import pytest
 
-from api.dataCollectors.member_collector import MemberPaginateParser  # Adjust the import based on your structure
+from dataCollectors.member_collector import MemberPaginateParser  # Adjust the import based on your structure
 
 TEST_CASES = [
     {

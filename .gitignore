@@ -1,3 +1,7 @@
-/.env
+/api/.env
 /.env.test
 /.env.docker
+/.ann
+/.pkl
+/.h5
+

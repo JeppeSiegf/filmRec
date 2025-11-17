@@ -1,7 +1,7 @@
 import aiohttp
 import pytest
 
-from api.dataCollectors.utils.page_parser import PageParser
+from dataCollectors.utils.page_parser import PageParser
 
 
 @pytest.mark.asyncio

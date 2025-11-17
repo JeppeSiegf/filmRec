@@ -4,10 +4,10 @@ import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
 from api import db, create_app
-from api.models import User
-from api.models.film import Film
-from api.models.genre import Genre
-from config import TestConfig
+from api import User
+from api import Film
+from api import Genre
+from api import TestConfig
 
 
 @pytest.fixture(scope="session")
