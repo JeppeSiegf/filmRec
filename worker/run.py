@@ -4,8 +4,8 @@ from celery import Celery
 import os
 
 from celery.schedules import crontab
-from services.update_log import UpdateLog
-from services.requests import APIService
+from worker.services.update_log import UpdateLog
+from worker.services.requests import APIService
 
 broker_url = os.getenv("CELERY_BROKER_URL")
 result_backend = os.getenv("CELERY_RESULT_BACKEND")
@@ -15,11 +15,11 @@ app = Celery("celery_app", broker=broker_url, backend=result_backend)
 
 app.conf.update_logger = UpdateLog(os.getenv("UPDATELOG_URL"))
 app.conf.api_service = APIService()
-app.autodiscover_tasks(['services'])
+app.autodiscover_tasks(['worker.services'])
 
 app.conf.timezone = 'UTC'
 
-from services.tasks import test
+from worker.services.tasks import test
 test.apply_async(
 
     eta=datetime.utcnow() + timedelta(seconds=10)  # or any time in future

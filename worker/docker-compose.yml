@@ -11,6 +11,6 @@ services:
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
       - UPDATELOG_URL=${UPDATELOG_URL}
-      - PYTHONPATH=/app
+
     restart: unless-stopped
 
