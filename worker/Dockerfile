@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
 # Workdir inside container
-WORKDIR /app/worker
+WORKDIR /app
 
 # Copy *contents* of worker/ into /app/worker
 COPY worker/. /app/worker/
