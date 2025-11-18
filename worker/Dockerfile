@@ -1,17 +1,19 @@
 FROM python:3.11-slim
-FROM python:3.11-slim
 
+# Workdir inside container
 WORKDIR /app/worker
 
-# copy requirements first (cache friendly)
+# Copy worker/ into /app/worker
+COPY worker/ /app/worker
+
+# Copy dataCollectors/ from repo root into /app/dataCollectors
+# NOTE: path is from the *build context*, not relative to this Dockerfile.
+COPY dataCollectors/ /app/dataCollectors
+
+# Install requirements (worker has its own requirements)
 COPY worker/requirements.txt /app/worker/requirements.txt
 RUN pip install --no-cache-dir -r /app/worker/requirements.txt
 
-# copy contents (note trailing slash /)
-COPY worker/ /app/worker
-COPY dataCollectors /app/dataCollectors
-
-# Set PYTHONPATH so imports work from worker directory
 ENV PYTHONPATH=/app/worker:/app
 
 CMD ["celery", "-A", "run:app", "worker", "--beat", "--loglevel=info"]
