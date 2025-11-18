@@ -16,4 +16,4 @@ RUN pip install --no-cache-dir -r /app/worker/requirements.txt
 ENV PYTHONPATH=.
 
 # Start Celery
-CMD ["celery", "-A", "worker.run:app", "worker", "--beat", "--loglevel=info"]
+CMD ["celery", "-A", "run:app", "worker", "--beat", "--loglevel=info"]
