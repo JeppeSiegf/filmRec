@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 from typing import Union, Tuple, Type, List, Dict
 
-from celery import chain
+from celery import chain, current_app
 from celery.signals import worker_ready
 
 from dataCollectors.film_detail_collector import FilmDetailCollector
@@ -16,11 +16,9 @@ from dataCollectors.member_collector import MemberListCollector
 from dataCollectors.utils.page_collector import PageCollector
 from dataCollectors.utils.sort_categories import FilmSorting, GenreFilter, ReleaseDateFilter, TimePeriodSort, \
     UserSorting, RatingSorting, SingleRatingFilter, RatingRangeFilter
-from worker.run import app
 
 logger = logging.getLogger(__name__)
-update_logger = app.conf.update_logger
-api_service = app.conf.api_service
+app = current_app
 
 chunk_size = 100
 max_tasks_per_minute: int = 500
@@ -29,8 +27,8 @@ updating_db = False
 
 @app.task
 def test():
-    wha = update_logger.get('gemko')
-    logger.info(f'stopping at : {wha}')
+
+    fetch_film_info(['pulp'])
 
 
 @app.task
@@ -55,7 +53,7 @@ def update_database(user: str, title: str):
 
 @app.task
 def fetch_films(user: str, title: str,):
-    logger.info(f'stopping at : {update_logger.get(title)}')
+    logger.info(f'stopping at : {app.conf.update_logger.get(title)}')
     films = fetch_film_refs(user, title, order = FilmSorting.LAST_ADDITION, use_stop_point = True)
 
     if not films:
@@ -69,7 +67,7 @@ def fetch_films(user: str, title: str,):
         fetch_film_info.delay(chunk)
 
     newest_entry = film_refs[0]
-    update_logger.log(title, 'list', newest_entry)
+    app.conf.update_logger.log(title, 'list', newest_entry)
 
     logger.info(f"Dispatched {len(chunks)} fetch_film_info tasks.")
     return film_refs
@@ -83,7 +81,7 @@ def fetch_film_refs(user: str, title: str,
     stopping_point = None
 
     if use_stop_point is True:
-        stopping_point = update_logger.get(title)
+        stopping_point = app.conf.update_logger.get(title)
         logger.info(f'Stopping point from broad list {stopping_point}')
 
     collector = FilmListCollector(user, title, stopping_point)
@@ -93,7 +91,7 @@ def fetch_film_refs(user: str, title: str,
         for i in range(0, len(collector.items), chunk_size):
             chunk = collector.items[i:i + chunk_size]
             # Launch chunk as a group
-            asyncio.run(api_service.post_films(chunk))
+            asyncio.run(app.conf.api_service.post_films(chunk))
         return collector.items
 
     logger.info("No films found")
@@ -109,7 +107,7 @@ def fetch_film_info(film_refs):
     films = asyncio.run(fetch_page_info(film_refs, FilmDetailCollector, 50))
 
     if films:
-        asyncio.run(api_service.put_films(films))
+        asyncio.run(app.conf.api_service.put_films(films))
     else:
         logger.info("No films to send.")
 
@@ -174,7 +172,7 @@ def fetch_users(user, timespan: TimePeriodSort = None, order: UserSorting = None
     asyncio.run(collector.fetch_users_list(timespan=timespan, order=order))
 
     if collector.items is not None and len(collector.items) > 0:
-        result = asyncio.run(api_service.test())
+        result = asyncio.run(app.conf.api_service.test())
         logger.info(result)
 
 
@@ -182,7 +180,7 @@ def fetch_users(user, timespan: TimePeriodSort = None, order: UserSorting = None
 def fetch_ratings_for_all_users():
 
     try:
-        users = update_logger.get_all('user')
+        users = app.conf.update_logger.get_all('user')
         user_refs = list(users.keys())
 
         logger.info(user_refs[0])
@@ -270,23 +268,23 @@ def fetch_ratings(user: str, use_stop_point: bool = False, update_log=False, dec
     stopping_point = None
 
     if use_stop_point is True:
-        stopping_point = update_logger.get(user)
+        stopping_point = app.conf.update_logger.get(user)
         logger.info(stopping_point)
 
     collector = RatingsCollector(user, stopping_point)
     asyncio.run(collector.fetch_ratings_list(decade=decade, genres=genres, order=RatingSorting.LAST_ADDITION))
     logger.info(collector.items)
     if collector.items is not None and len(collector.items) > 0:
-        result = asyncio.run(api_service.post_ratings(collector.items))
+        result = asyncio.run(app.conf.api_service.post_ratings(collector.items))
         logger.info(result)
 
         if update_log is True:
             newest_entry = collector.items[0]
-            update_logger.log(user, 'user', newest_entry.get('film_id'))
+            app.conf.update_logger.log(user, 'user', newest_entry.get('film_id'))
             logger.info("logged well")
 
     logger.info(collector.items)
-    logger.info(update_logger.get(user))
+    logger.info(app.conf.update_logger.get(user))
 
 
 @app.task
@@ -300,9 +298,9 @@ Tuple[RatingRangeFilter, RatingRangeFilter]] = None,
     if collector.items is not None and len(collector.items) > 0:
         # Users First
         if addNewUsers:
-            asyncio.run(api_service.test())
+            asyncio.run(app.conf.api_service.test())
         # Then Ratings
-        asyncio.run(api_service.post_ratings(collector.ratings))
+        asyncio.run(app.conf.api_service.post_ratings(collector.ratings))
 
     logger.info(collector.items)
 
