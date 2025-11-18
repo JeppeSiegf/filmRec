@@ -6,8 +6,8 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 
 from celery.schedules import crontab
-from .services.update_log import UpdateLog
-from .services.requests import APIService
+from services.update_log import UpdateLog
+from services.requests import APIService
 
 broker_url = os.getenv("CELERY_BROKER_URL")
 result_backend = os.getenv("CELERY_RESULT_BACKEND")
@@ -21,7 +21,7 @@ app.autodiscover_tasks(['services'])
 
 app.conf.timezone = 'UTC'
 
-from .services.tasks import test
+from services.tasks import test
 test.apply_async(
 
     eta=datetime.utcnow() + timedelta(seconds=10)  # or any time in future
