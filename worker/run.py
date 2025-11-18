@@ -1,7 +1,9 @@
+import sys
 from datetime import datetime, timedelta
 
 from celery import Celery
 import os
+sys.path.insert(0, os.path.dirname(__file__))
 
 from celery.schedules import crontab
 from .services.update_log import UpdateLog
@@ -19,7 +21,7 @@ app.autodiscover_tasks(['services'])
 
 app.conf.timezone = 'UTC'
 
-from services.tasks import test
+from .services.tasks import test
 test.apply_async(
 
     eta=datetime.utcnow() + timedelta(seconds=10)  # or any time in future
