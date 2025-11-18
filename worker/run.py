@@ -6,8 +6,8 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 
 from celery.schedules import crontab
-from services.update_log import UpdateLog
-from services.requests import APIService
+from worker.services.update_log import UpdateLog
+from worker.services.requests import APIService
 
 broker_url = os.getenv("CELERY_BROKER_URL")
 result_backend = os.getenv("CELERY_RESULT_BACKEND")
