@@ -1,0 +1,8 @@
+celery==5.5.0rc5
+implicit==0.7.2
+numpy==2.3.5
+pandas==2.3.3
+SQLAlchemy==2.0.31
+annoy
+redis
+psycopg2

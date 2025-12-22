@@ -6,7 +6,6 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from api import db
 
-
 class BulkPersistence(ABC):
 
     def __init__(self):
@@ -50,18 +49,16 @@ class BulkPersistence(ABC):
         update_columns = update_columns if update_columns is not None else self.update_columns
 
         stmt = insert(table).values(data)
-        set_values = {col: stmt.excluded[col] for col in update_columns}
+        set_values = {col: stmt.excluded[col] for col in update_columns if col in data[0] and data[0][col] is not None}
 
-        conditions = [
-            table.c[col].is_distinct_from(stmt.excluded[col])
-            for col in update_columns
-        ]
+        if set_values:
+            conditions = [table.c[col].is_distinct_from(stmt.excluded[col]) for col in set_values]
+            stmt = stmt.on_conflict_do_update(
+                index_elements=conflict_columns,
+                set_=set_values,
+                where=or_(*conditions)
+            )
 
-        stmt = stmt.on_conflict_do_update(
-            index_elements=conflict_columns,
-            set_=set_values,
-            where=or_(*conditions)
-        )
         try:
             db.session.execute(stmt)
             db.session.commit()
@@ -71,4 +68,6 @@ class BulkPersistence(ABC):
             db.session.rollback()
             print(f"Database error during bulk upsert: {e}")
             return []
+
+
 

@@ -1,7 +1,6 @@
-/api/.env
-/.env.test
-/.env.docker
-/.ann
-/.pkl
-/.h5
+*.env
+*.ann
+*.pkl
+*.h5
+/recommendationEngine/models/
 

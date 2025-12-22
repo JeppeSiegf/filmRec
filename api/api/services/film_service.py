@@ -43,7 +43,6 @@ class FilmService:
     def get_films_by_refs(self, page_refs):
 
         films = self.repo.get_films_by_refs(page_refs)
-
         return films
 
     def get_newest_film(self):
@@ -56,10 +55,6 @@ class FilmService:
         search_result = self.repo.search_films(query)
         return search_result
 
-    def get_meta_data(self):
-
-        metadata = self.repo.get_all_film_meta_data()
-        return metadata
 
     def create_multiple_films(self, film_data_list):
         """Create multiple films from JSON format data."""
@@ -91,25 +86,8 @@ class FilmService:
 
         return inserted_films
 
-    async def scrape_multiple_films(self, film_refs: list[str]) -> list:
-        """Scrape film data from external sources."""
-        # TODO remove from here when worker is done
-        await FilmDetailCollector.enable_shared_session()
-        sem = asyncio.Semaphore(50)
 
-        tasks = [
-            self._fetch_and_extract(ref, sem)
-            for ref in film_refs
-        ]
-        collectors = await asyncio.gather(
-            *tasks,
-            return_exceptions=False
-        )
-        await FilmDetailCollector.disable_shared_session()
-
-        return collectors
-
-    def update_multiple_films(self, films : list):
+    def update_multiple_films(self, films: list):
         """Validate scraped data and update database."""
         if not films:
             print("No collectors provided.")
@@ -269,8 +247,12 @@ if __name__ == "__main__":
     app = create_app()
     with app.app_context():
 
+        from dataCollectors.film_detail_collector import FilmDetailCollector
+        collector = FilmDetailCollector("avatar-fire-and-ash")
+        films = asyncio.run(collector.extract_details())
+
         service = FilmService()
-        films = asyncio.run(service.scrape_multiple_films(film_refs=["se7en"]))
+
         service.update_multiple_films(films)
 
 

@@ -126,10 +126,8 @@ class FilmRepository(BulkPersistence):
             else:
                 raise ValueError("metric must be 'cosine', 'l2' or 'ip'")
 
-            # subquery: hent embedding for kildens page_ref (som en enkelt kolonne)
             subq = db.session.query(Film.embedding.label("q_embedding")).filter(Film.page_ref == page_ref).subquery()
 
-            # hovedquery: cross-join mod subquery, sørg for at både kilde- og mål-embedding ikke er NULL
             q = (
                 db.session.query(Film)
                 .join(subq, true())  # cross join -> én SQL-forespørgsel med subquery

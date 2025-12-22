@@ -85,21 +85,5 @@ class RecommendationService:
         return len(records)
 
 
-    def retrain_model(self):
-        pass
-
-
-if __name__ == "__main__":
-    app = create_app()
-    with app.app_context():
-        service = RecommendationService()
-        films = service.get_film_metadata_df()
-
-        print(sum(films['genres'].apply(lambda x: isinstance(x, list) and any(v is None for v in x))))
-        print(sum(films['languages'].apply(lambda x: isinstance(x, list) and any(v is None for v in x))))
-        print(sum(films['crew_refs'].apply(lambda x: isinstance(x, list) and any(v is None for v in x))))
-
-        print(sum(films['tags'].apply(lambda x: isinstance(x, list) and any(v is None for v in x))))
-        print(sum(films['themes'].apply(lambda x: isinstance(x, list) and any(v is None for v in x))))
 
 
