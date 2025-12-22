@@ -37,40 +37,40 @@ class BulkPersistence(ABC):
             return []
 
 
-def upsert(self, data, cls_table=None, conflict_columns=None, update_columns=None):
+    def upsert(self, data, cls_table=None, conflict_columns=None, update_columns=None):
 
-    cls_table = cls_table if cls_table is not None else self.cls_table
-    table = cls_table.__table__ if hasattr(cls_table, '__table__') else cls_table
+        cls_table = cls_table if cls_table is not None else self.cls_table
+        table = cls_table.__table__ if hasattr(cls_table, '__table__') else cls_table
 
-    conflict_columns = conflict_columns if conflict_columns is not None else self.conflict_columns
-    update_columns = update_columns if update_columns is not None else self.update_columns
+        conflict_columns = conflict_columns if conflict_columns is not None else self.conflict_columns
+        update_columns = update_columns if update_columns is not None else self.update_columns
 
-    stmt = insert(table).values(data)
-    set_values = {}
-    for col in update_columns:
-        # Only include columns that are actually present in the data
-        if any(col in row for row in data):
-            set_values[col] = stmt.excluded[col]
+        stmt = insert(table).values(data)
+        set_values = {}
+        for col in update_columns:
+            # Only include columns that are actually present in the data
+            if any(col in row for row in data):
+                set_values[col] = stmt.excluded[col]
 
-    if set_values:
-        # Only update if value is different
-        conditions = [table.c[col].is_distinct_from(stmt.excluded[col]) for col in set_values]
-        stmt = stmt.on_conflict_do_update(
-            index_elements=conflict_columns,
-            set_=set_values,
-            where=or_(*conditions)
-        )
-    else:
-        # If no columns to update, just do nothing on conflict
-        stmt = stmt.on_conflict_do_nothing(index_elements=conflict_columns)
+        if set_values:
+            # Only update if value is different
+            conditions = [table.c[col].is_distinct_from(stmt.excluded[col]) for col in set_values]
+            stmt = stmt.on_conflict_do_update(
+                index_elements=conflict_columns,
+                set_=set_values,
+                where=or_(*conditions)
+            )
+        else:
+            # If no columns to update, just do nothing on conflict
+            stmt = stmt.on_conflict_do_nothing(index_elements=conflict_columns)
 
-    try:
-        db.session.execute(stmt)
-        db.session.commit()
-        print(f"Upserted {len(data)} entries.")
-        return data
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        print(f"Database error during bulk upsert: {e}")
-        return []
+        try:
+            db.session.execute(stmt)
+            db.session.commit()
+            print(f"Upserted {len(data)} entries.")
+            return data
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            print(f"Database error during bulk upsert: {e}")
+            return []
 
