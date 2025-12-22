@@ -36,8 +36,11 @@ class BulkPersistence(ABC):
             print(f"Database error during bulk insert: {e}")
             return []
 
-
     def upsert(self, data, cls_table=None, conflict_columns=None, update_columns=None):
+
+        if not data:
+            print("No data provided.")
+            return []
 
         cls_table = cls_table if cls_table is not None else self.cls_table
         table = cls_table.__table__ if hasattr(cls_table, '__table__') else cls_table
@@ -45,24 +48,26 @@ class BulkPersistence(ABC):
         conflict_columns = conflict_columns if conflict_columns is not None else self.conflict_columns
         update_columns = update_columns if update_columns is not None else self.update_columns
 
-        stmt = insert(table).values(data)
+        # Only include columns that are in conflict_columns or update_columns
+        allowed_columns = set(conflict_columns + update_columns)
+        filtered_data = [
+            {k: v for k, v in row.items() if k in allowed_columns}
+            for row in data
+        ]
+
+        stmt = insert(table).values(filtered_data)
         set_values = {}
         for col in update_columns:
-            # Only include columns that are actually present in the data
-            if any(col in row for row in data):
+            if any(col in row for row in filtered_data):
                 set_values[col] = stmt.excluded[col]
 
         if set_values:
-            # Only update if value is different
             conditions = [table.c[col].is_distinct_from(stmt.excluded[col]) for col in set_values]
             stmt = stmt.on_conflict_do_update(
                 index_elements=conflict_columns,
                 set_=set_values,
                 where=or_(*conditions)
             )
-        else:
-            # If no columns to update, just do nothing on conflict
-            stmt = stmt.on_conflict_do_nothing(index_elements=conflict_columns)
 
         try:
             db.session.execute(stmt)
@@ -73,4 +78,3 @@ class BulkPersistence(ABC):
             db.session.rollback()
             print(f"Database error during bulk upsert: {e}")
             return []
-
