@@ -70,8 +70,7 @@ class DataService:
             if not records:
                 return 0
 
-
-            res = repo.update_embaddings(session, records, conflict_columns=["page_ref"], update_columns=["embedding"])
+            res = repo.update_embeddings(session, records)
             return len(res) if res else 0
 
 

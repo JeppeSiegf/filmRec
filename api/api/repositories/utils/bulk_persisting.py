@@ -49,9 +49,13 @@ class BulkPersistence(ABC):
         update_columns = update_columns if update_columns is not None else self.update_columns
 
         stmt = insert(table).values(data)
-        set_values = {col: stmt.excluded[col] for col in update_columns if col in data[0] and data[0][col] is not None}
+        set_values = {}
+        for col in update_columns:
+            if any(col in row and row[col] is not None for row in data):
+                set_values[col] = stmt.excluded[col]
 
         if set_values:
+            # Only update if value is different
             conditions = [table.c[col].is_distinct_from(stmt.excluded[col]) for col in set_values]
             stmt = stmt.on_conflict_do_update(
                 index_elements=conflict_columns,

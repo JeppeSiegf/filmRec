@@ -6,29 +6,18 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import func, select, distinct, update
 
-def update_embaddings(session, data, conflict_columns=None, update_columns=None):
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import SQLAlchemyError
 
+def update_embeddings(session, data):
     if not data:
         print("No data provided.")
         return []
 
-    table = Film
-
-    # default conflict / update behavior if not provided
-    if conflict_columns is None:
-        conflict_columns = ["page_ref"]
-    if update_columns is None:
-        update_columns = ["embedding"]
-
-    stmt = insert(table).values(data)
-
-    set_values = {col: stmt.excluded[col] for col in update_columns}
-    conditions = [table.c[col].is_distinct_from(stmt.excluded[col]) for col in update_columns]
-
+    stmt = insert(Film).values(data)
     stmt = stmt.on_conflict_do_update(
-        index_elements=conflict_columns,
-        set_=set_values,
-        where=or_(*conditions) if conditions else None
+        index_elements=["page_ref"],  # only consider page_ref for conflict
+        set_={"embedding": stmt.excluded.embedding}  # only update embedding
     )
 
     try:
@@ -40,6 +29,7 @@ def update_embaddings(session, data, conflict_columns=None, update_columns=None)
         session.rollback()
         print(f"Database error during bulk upsert: {e}")
         return []
+
 
 
 def get_all_film_meta_data(session, crew_role="director"):
