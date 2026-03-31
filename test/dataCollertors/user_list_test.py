@@ -1,6 +1,6 @@
 import pytest
 
-from dataCollectors.user_list_collector import UserPaginateParser
+from dataCollectors.user_list_collector import UserListCollector
 
 TEST_CASES = [
     {
@@ -19,11 +19,11 @@ TEST_CASES = [
 @pytest.mark.asyncio
 @pytest.mark.parametrize("test_case", TEST_CASES)
 async def test_user_list_collector(test_case):
-    collector = UserPaginateParser()
+    collector = UserListCollector()
 
     try:
         # Fetch the data
-        await collector.fetch_user_list(test_case["url"])
+        await collector.fetch_users_list(test_case["url"])
 
         if test_case["expected_status"] == "success":
             assert collector.userCount > 0, "User list should not be empty"

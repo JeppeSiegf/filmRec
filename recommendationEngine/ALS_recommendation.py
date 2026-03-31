@@ -82,7 +82,7 @@ class ALSRecommender(BaseRecommender):
 
 if __name__ == '__main__':
     from api import create_app
-
+    url = print(os.getenv("DATABASE_URL"))
     recommender = ALSRecommender()
     # Uncomment to retrain:
     #recommender.test_train()

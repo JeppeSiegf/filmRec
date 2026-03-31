@@ -2,7 +2,7 @@ import asyncio
 import re
 from json import loads
 
-import aiohttp
+from curl_cffi.requests import AsyncSession
 import unicodedata
 
 from dataCollectors.utils.page_collector import PageCollector
@@ -44,9 +44,9 @@ class FilmDetailCollector(PageCollector, SessionManager):
         }
 
 
-    async def fetch_page(self, session: aiohttp.ClientSession = None):
+    async def fetch_page(self, session: AsyncSession = None):
         if session is None:
-            async with aiohttp.ClientSession() as temp_session:
+            async with AsyncSession(impersonate="firefox") as temp_session:
                 self.dom = await self.get_parsed_page(temp_session, self.url)
         else:
             self.dom = await self.get_parsed_page(session, self.url)
@@ -79,10 +79,7 @@ class FilmDetailCollector(PageCollector, SessionManager):
                 self.get_avg_rating(self.dom),
                 self.get_series(self.dom),
             )
-
         # Update last_update timestamp after extraction
-
-
         self.dom = None
         self.script = None
 
@@ -291,8 +288,8 @@ class FilmDetailCollector(PageCollector, SessionManager):
 if __name__ == "__main__":
     asyncio.run(FilmDetailCollector.enable_shared_session())
 
-    film = FilmDetailCollector('regeneration-1923')
-    film2 = FilmDetailCollector('pulp')
+    film = FilmDetailCollector('the-rabbis-cat')
+    film2 = FilmDetailCollector('a-serious-man')
     film3 = FilmDetailCollector('hero-2002')
     samples = ['pulp-fiction', 'the-rabbis-cat', 'pokemon-the-movie-2000', 'hero-2002', 'barbie']
 
@@ -307,4 +304,6 @@ if __name__ == "__main__":
 
     asyncio.run(FilmDetailCollector.disable_shared_session())
 
+    print(f"Film data: {film.data}")
     print(f"Film data: {film2.data}")
+    print(f"Film data: {film3.data}")

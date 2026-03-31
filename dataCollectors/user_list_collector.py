@@ -57,7 +57,7 @@ class UserListCollector(PaginateCollector):
             else:
                 user_url = "Unknown"
 
-            # Create JSON object compatible with User model schema
+
             user_data = {
                 'profile_ref': user_url,  # Primary key - the user's profile reference
                 'username': user_name,  # Username

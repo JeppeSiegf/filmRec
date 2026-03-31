@@ -1,7 +1,6 @@
 import abc
 import asyncio
-
-import aiohttp
+from curl_cffi.requests import AsyncSession
 
 from dataCollectors.utils.page_parser import PageParser
 from dataCollectors.utils.session_manager import SessionManager
@@ -15,17 +14,14 @@ class PaginateCollector(PageParser, SessionManager):
         self.items = []
         self.itemCount = 0
 
-    async def fetch_list(self, ):
-
+    async def fetch_list(self):
         try:
-            async with aiohttp.ClientSession() as session:
-
+            async with AsyncSession(impersonate="chrome") as session:
                 self.items = await self.fetch_data(self.url, session)
                 self.itemCount = len(self.items)
-
         except Exception as e:
             print(f"Error fetching list from {self.url}: {e}")
-            raise  # Re-raise the exception to propagate it
+            raise
 
     async def fetch_data(self, base_url, session):
 

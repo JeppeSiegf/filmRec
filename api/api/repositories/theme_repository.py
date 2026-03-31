@@ -22,6 +22,7 @@ class ThemeRepository(BulkPersistence):
             return None
 
     def get_theme_by_id(self, theme_id):
+
         try:
             return Theme.query.get(theme_id)
         except SQLAlchemyError as e:

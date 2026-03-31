@@ -1,6 +1,6 @@
 import pytest
 
-from dataCollectors import FilmPaginateParser
+from dataCollectors import member_collector
 
 TEST_CASES = [
     {

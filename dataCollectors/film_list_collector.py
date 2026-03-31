@@ -32,15 +32,21 @@ class FilmListCollector(PaginateCollector):
         film_list = []
 
         page = await self.get_parsed_page(session, page_url)
+        # Debug: Check if we got the page
+        if not page:
+            return film_list
+
         items = page.find_all("div", {"class": "listitem js-listitem"})
+        print(f"Found {len(items)} list items")
 
         for item in items:
-            article = item.find("article", {"class": "list-detailed-entry"})
+            # Look for article with any class containing "list-detailed-entry"
+            article = item.find("article", class_=lambda x: x and "list-detailed-entry" in x)
             if not article:
                 continue
 
-            # Film data is stored in the "react-component" with data attributes
-            poster_div = article.find("div", {"class": "react-component"})
+            # Find the div with class containing "react-component"
+            poster_div = article.find("div", class_=lambda x: x and "react-component" in x)
             if not poster_div:
                 continue
 
@@ -50,6 +56,8 @@ class FilmListCollector(PaginateCollector):
             film_slug = poster_div.get("data-item-slug")
             if film_slug:
                 film_obj["page_ref"] = film_slug
+            else:
+                print("No data-item-slug found")
 
             # Extract title from <img alt="..."> tag
             img = poster_div.find("img", {"class": "image"})
@@ -57,9 +65,12 @@ class FilmListCollector(PaginateCollector):
                 alt = img.get("alt")
                 if alt:
                     film_obj["title"] = alt
+            else:
+                print("No img tag found")
 
             # Stop parsing if we reach the stop reference
             if film_slug == self.stop_ref:
+                print(f"Reached stop reference: {self.stop_ref}")
                 return film_list
 
             if film_obj:
@@ -67,10 +78,9 @@ class FilmListCollector(PaginateCollector):
 
         return film_list
 
-
 # Usage example
 async def main():
-    collector = FilmListCollector('jack', 'official-top-250-films-with-the-most-fans', )
+    collector = FilmListCollector('jack', '2025')
     await collector.fetch_film_list(order=FilmSorting.LAST_ADDITION)
     movielist = collector.items
     print(movielist)

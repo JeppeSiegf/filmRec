@@ -1,6 +1,4 @@
 *.env
-*.ann
-*.pkl
-*.h5
+*/filmrec.egg-info
 /recommendationEngine/models/
 

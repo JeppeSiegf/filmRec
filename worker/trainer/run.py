@@ -31,7 +31,6 @@ def retrain_model():
 
 
 if __name__ == "__main__":
-    logger.info("Script started")
+
     #test()
     retrain_model()
-    logger.info("Script finished")

@@ -1,6 +1,7 @@
 # service.py
 import os
 import pandas as pd
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from . import repository as repo
@@ -11,7 +12,8 @@ class DataService:
 
     def __init__(self, database_url: str = None):
         if database_url is None:
-            database_url = os.environ.get("DATABASE_URL", "postgres://postgres:A5BE1fROr3kXvlvfWkIPb~Wn38k.Wha0@yamanote.proxy.rlwy.net:37220/film")
+            load_dotenv(".env")
+            database_url = os.environ.get("DATABASE_URL")
         if database_url.startswith("postgres://"):
             database_url = database_url.replace("postgres://", "postgresql://", 1)
 

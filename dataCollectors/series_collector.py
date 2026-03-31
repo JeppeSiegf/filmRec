@@ -45,8 +45,8 @@ class SeriesCollector(PaginateCollector):
             collection_metadata.append((
                 collection_slug,
                 collection_title,
-                0,  # Placeholder for film count
-                []  # Placeholder for film slugs
+                0,
+                []
             ))
 
             # Create task for this collection
