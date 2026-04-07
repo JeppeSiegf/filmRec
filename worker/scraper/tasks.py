@@ -3,15 +3,15 @@ import logging
 import os
 import random
 import time
-from typing import Union, Tuple, Type, List, Dict
+from typing import Union, Tuple, List, Dict
 
 from celery import chain
 
 from dataCollectors.utils.sort_categories import FilmSorting, GenreFilter, ReleaseDateFilter, TimePeriodSort, \
     UserSorting, RatingSorting, SingleRatingFilter, RatingRangeFilter
 from worker.scraper.celery_app import app
-from worker.services.update_log import UpdateLog
-from worker.services.request import APIService
+from worker.scraper.update_log import UpdateLog
+from worker.scraper.request import APIService
 import worker.services.lazy_import as imp
 
 logger = logging.getLogger(__name__)
