@@ -41,8 +41,10 @@ def update_database(user: str, title: str):
     return {'chain_id': async_result.id, 'status': 'started'}
 
 
+
 @app.task(name='film',queue=queue)
 def fetch_films(user: str, title: str,):
+
     update_logger = UpdateLog(os.getenv("UPDATELOG_URL"))
     logger.info(f'stopping at : {update_logger.get(title)}')
     films = fetch_film_refs(user, title, order = FilmSorting.LAST_ADDITION, use_stop_point = True)
@@ -70,7 +72,6 @@ def fetch_film_refs(user: str, title: str,
                     order: FilmSorting = None, use_stop_point: bool = False):
 
     stopping_point = None
-
     if use_stop_point is True:
         update_logger = UpdateLog(os.getenv("UPDATELOG_URL"))
         stopping_point = update_logger.get(title)
@@ -82,7 +83,6 @@ def fetch_film_refs(user: str, title: str,
     if collector.items is not None and len(collector.items) > 0:
         for i in range(0, len(collector.items), chunk_size):
             chunk = collector.items[i:i + chunk_size]
-            # Launch chunk as a group
             api_service = APIService()
             asyncio.run(api_service.post_films(chunk))
         return collector.items
@@ -92,9 +92,11 @@ def fetch_film_refs(user: str, title: str,
 
 @app.task(name='filmInfo',queue=queue)
 def fetch_film_info(film_refs):
+
     if not film_refs:
         logger.info("No film refs provided.")
         return
+
     collector = imp.FilmDetailCollector()
     films = asyncio.run(fetch_page_info(film_refs, collector, 50))
 

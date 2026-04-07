@@ -1,0 +1,21 @@
+[project]
+name = "filmrec"
+version = "1.0"
+
+dependencies = [
+    "celery",
+    "redis",
+    "aiohttp",
+    "python-dotenv"
+]
+
+[project.scripts]
+filmrec = "worker.cli.enqueue:main"
+
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["worker*", "dataCollectors*"]
