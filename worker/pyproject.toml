@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "worker"
@@ -12,4 +12,4 @@ dependencies = [
 ]
 
 [project.scripts]
-enqueue = "worker.cli.enqueue:main"
+enqueue = "cli.enqueue:main"

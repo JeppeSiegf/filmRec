@@ -1,0 +1,1 @@
+version: '3.8'services:  worker:    build:      context: ../..      dockerfile: Dockerfile      pull: true    image: siegf/filmrectrainer:uno    command: python -u /app/worker/trainer/run.py    environment:      - DATABASE_URL=${DATABASE_URL}      - REMOTE=TRUE      - OPENBLAS_NUM_THREADS=1      - PYTHONUNBUFFERED=1    restart: 'no'

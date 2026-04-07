@@ -12,7 +12,7 @@ from dataCollectors.utils.sort_categories import FilmSorting, GenreFilter, Relea
 from worker.scraper.celery_app import app
 from worker.scraper.update_log import UpdateLog
 from worker.scraper.request import APIService
-import worker.services.lazy_import as imp
+import worker.scraper.lazy_import as imp
 
 logger = logging.getLogger(__name__)
 

@@ -23,7 +23,6 @@ def test():
 
 def retrain_model():
 
-
     engine = ALSRecommender()
     logger.info("Starting Retraining")
     engine.create()

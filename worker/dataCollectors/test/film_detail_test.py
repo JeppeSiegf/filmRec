@@ -1,5 +1,5 @@
 from dataCollectors.film_detail_collector import FilmDetailCollector
-from dataCollectors.test.fixtures import FILM_FULL_DATA
+from worker.dataCollectors.test.fixtures import FILM_FULL_DATA
 import pytest
 
 from dataCollectors.test.test_base import GenericCollectorTest
