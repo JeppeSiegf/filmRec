@@ -29,7 +29,7 @@ class APIService:
 
     async def fetch_latest_ratings(self, user_id, session):
 
-        async with session.get(f"{self.api_address}/ratings/latest/{user_id}") as response:
+        async with session.get(f"{self.api_address}/api/ratings/latest/{user_id}") as response:
             if response.status == 404:
                 return None
             response.raise_for_status()
@@ -37,7 +37,7 @@ class APIService:
 
     async def post_latest_ratings(self, user_id, session):
 
-        async with session.get(f"{self.api_address}/ratings/latest/{user_id}") as response:
+        async with session.get(f"{self.api_address}/api/ratings/latest/{user_id}") as response:
             if response.status == 404:
                 return None
             response.raise_for_status()
@@ -48,31 +48,20 @@ class APIService:
         async with aiohttp.ClientSession() as session:
             async with session.post(
                     f"{self.api_address}/api/films/",
-                    json=films
+                    json=films,
+                    headers={"Content-Type": "application/json"}
             ) as response:
-                if response.status == 404:
-                    return None
                 response.raise_for_status()
                 return await response.json()
 
     async def put_films(self, films):
+
         async with aiohttp.ClientSession() as session:
             async with session.put(
                     f"{self.api_address}/api/films/",
-                    json=films
+                    json=films,
+                    headers={"Content-Type": "application/json"}
             ) as response:
-                response.raise_for_status()
-                return await response.json()
-
-    async def post_users(self, users):
-
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                    f"{self.api_address}/api/users/",
-                    json=users
-            ) as response:
-                if response.status == 404:
-                    return None
                 response.raise_for_status()
                 return await response.json()
 
@@ -81,13 +70,15 @@ class APIService:
         async with aiohttp.ClientSession() as session:
             async with session.post(
                     f"{self.api_address}/api/ratings/",
-                    json=ratings
+                    json=ratings,
+                    headers={"Content-Type": "application/json"}
             ) as response:
-                if response.status == 404:
-                    return None
                 response.raise_for_status()
                 return await response.json()
 
-
     async def test(self):
-        return 'working connection'
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{self.api_address}/test") as response:
+                response.raise_for_status()
+                return await response.json()

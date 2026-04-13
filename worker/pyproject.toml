@@ -9,7 +9,15 @@ requires-python = ">=3.10"
 dependencies = [
     "celery",
     "python-dotenv",
+    "redis",
+    "aiohttp",
+    "beautifulsoup4",
+    "requests",
 ]
 
 [project.scripts]
-enqueue = "cli.enqueue:main"
+enqueue = "enqueue:main"
+
+[tool.setuptools]
+packages = ["util", "dataCollectors"]
+py-modules = ["enqueue","app","tasks"]

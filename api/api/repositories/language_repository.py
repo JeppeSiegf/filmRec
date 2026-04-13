@@ -17,6 +17,10 @@ class LanguageRepository(BulkPersistence):
         self.assoc_table = Film_Language
         self.assoc_conflicts_columns = ['film_id', 'language_id']
         self.assoc_update_columns = ['is_primary']
+        self.assoc_fk_filter = {
+            'film_id': ('film', 'page_ref'),
+        }
+
 
     def get_all_languages(self):
 

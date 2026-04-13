@@ -21,11 +21,7 @@ class FilmRepository(BulkPersistence):
         self.cls_table = Film
         self.conflict_columns = ['page_ref']
         self.update_columns = [
-            'title',
-            'title_original',
-            'description',
-            'image_ref',
-            'image_ref_large',
+            'title','title_original','description','image_ref','image_ref_large',
             'banner_ref',
             'release_year',
             'runtime',
@@ -35,6 +31,7 @@ class FilmRepository(BulkPersistence):
             'imdb_ref',
             'avg_rating'
         ]
+        self.own_filter = True
     # CRUD
     def get_all_films(self):
 

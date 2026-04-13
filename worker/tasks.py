@@ -9,10 +9,10 @@ from celery import chain
 
 from dataCollectors.utils.sort_categories import FilmSorting, GenreFilter, ReleaseDateFilter, TimePeriodSort, \
     UserSorting, RatingSorting, SingleRatingFilter, RatingRangeFilter
-from worker.scraper.celery_app import app
-from worker.scraper.update_log import UpdateLog
-from worker.scraper.request import APIService
-import worker.scraper.lazy_import as imp
+from app import app
+from util.update_log import UpdateLog
+from util.request import APIService
+import util.lazy_import as imp
 
 logger = logging.getLogger(__name__)
 
@@ -320,7 +320,3 @@ def fetch_themes():
 @app.task
 def fetch_tag():
     pass
-
-
-
-

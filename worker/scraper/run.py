@@ -1,1 +1,0 @@
-from worker.scraper.celery_app import app

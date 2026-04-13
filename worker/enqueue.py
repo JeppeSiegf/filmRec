@@ -14,20 +14,20 @@ LOG = logging.getLogger("enqueue")
 
 # ── Celery app import ──────────────────────────────────────────────────────────
 try:
-    from scraper.celery_app import app
+    from app import app
 except ImportError as e:
     LOG.error("Cannot import Celery app: %s", e)
     sys.exit(1)
 
 # ── Task registration ──────────────────────────────────────────────────────────
 try:
-    importlib.import_module("scraper.tasks")
+    importlib.import_module("tasks")
 except ImportError as e:
-    LOG.error("Cannot import scraper.tasks: %s", e)
+    LOG.error("Cannot import tasks: %s", e)
     sys.exit(1)
 
 try:
-    app.autodiscover_tasks(["scraper.tasks"])
+    app.autodiscover_tasks(["tasks"])
 except Exception:
     pass
 

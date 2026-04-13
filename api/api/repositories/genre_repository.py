@@ -9,13 +9,14 @@ from ..repositories.utils.bulk_persisting import BulkPersistence
 class GenreRepository(BulkPersistence):
 
     def __init__(self):
-
         super().__init__()
         self.cls_table = Genre
         self.conflict_columns = ['genre']
-
         self.assoc_table = film_genre
         self.assoc_conflicts_columns = ['film_id', 'genre_id']
+        self.assoc_fk_filter = {
+            'film_id': ('film', 'page_ref'),
+        }
 
     def get_all_genres(self):
 

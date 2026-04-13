@@ -1,6 +1,5 @@
 
 
-
 def FilmListCollector(user, title, stopping_point):
     from dataCollectors.film_list_collector import FilmListCollector
     return FilmListCollector(user, title, stopping_point)
@@ -25,6 +24,3 @@ def UserListCollector(user):
 def MemberListCollector(film, stop_page, stop_user):
     from dataCollectors.member_collector import MemberListCollector
     return MemberListCollector(film, stop_page, stop_user)
-
-
-

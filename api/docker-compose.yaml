@@ -6,14 +6,10 @@ services:
       context: .
       dockerfile: Dockerfile
     image: siegf/filmapi:latest
-    environment:
-      DATABASE_URL:
+    env_file:
+      - .env
     ports:
       - "5000:5000"
     restart: on-failure
-    networks:
-      - film_network
+    network_mode: host
 
-networks:
-  film_network:
-    driver: bridge

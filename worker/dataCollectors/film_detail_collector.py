@@ -288,7 +288,7 @@ class FilmDetailCollector(PageCollector, SessionManager):
 if __name__ == "__main__":
     asyncio.run(FilmDetailCollector.enable_shared_session())
 
-    film = FilmDetailCollector('the-rabbis-cat')
+    film = FilmDetailCollector('project-hail-mary')
     film2 = FilmDetailCollector('a-serious-man')
     film3 = FilmDetailCollector('hero-2002')
     samples = ['pulp-fiction', 'the-rabbis-cat', 'pokemon-the-movie-2000', 'hero-2002', 'barbie']

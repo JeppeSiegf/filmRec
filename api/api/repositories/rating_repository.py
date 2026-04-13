@@ -4,12 +4,15 @@ from ..repositories.utils.bulk_persisting import BulkPersistence
 
 
 class RatingRepository(BulkPersistence):
-
     def __init__(self):
         super().__init__()
         self.cls_table = Rating
         self.conflict_columns = ['user_id', 'film_id']
         self.update_columns = ['rating', 'liked', 'rating_date']
+        self.fk_filter = {
+            'user_id': ('user', 'profile_ref'),
+            'film_id': ('film', 'page_ref'),
+}
 
     def get_all_ratings(self):
         return Rating.query.all()

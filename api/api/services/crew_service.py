@@ -1,71 +1,35 @@
-from ..models import Crew, Credit, Role
+from ..models import Credit, Role, Crew
 from ..repositories.crew_repository import CrewRepository
 
-
 class CrewService:
-
     def __init__(self):
         self.repo = CrewRepository()
-
-        self.role_conflicts = ['role']
-        self.crew_conflicts = ['page_ref']
-        self.credit_conflicts = ['film_id', 'crew_id', 'role_id']
-        self.credit_updates = ['rank']
-
 
     def get_credits_by_crew_ref(self, crew_ref):
         return self.repo.get_credits_by_crew_ref(crew_ref)
 
     def add_film_credits_bulk(self, credits: list[tuple[str, list[dict]]]):
         try:
+            unique_roles = {member["role"] for _, crew_data in credits for member in crew_data}
+            self.repo.insert([{"role": r} for r in unique_roles], Role, self.repo.role_conflicts)
 
-            unique_roles = set()
-            for _, crew_data in credits:
-                for member in crew_data:
-                    unique_roles.add(member["role"])
+            role_lookup = {r.role: r.id for r in self.repo.get_all_roles()}
 
-            # Step 2: Insert all roles (skip duplicates)
-            role_records = [{"role": r} for r in unique_roles]
-            self.repo.insert(role_records, Role, self.role_conflicts)
-
-            # Fetch role objects to map role name -> ID
-            role_objs = self.repo.get_all_roles()
-            role_lookup = {r.role: r.id for r in role_objs}
-
-            # Prepare crew data for insertion
-            all_crew_mappings = []
-            all_credits_mappings = []
-
+            all_crew, all_credits = [], []
             for film_ref, crew_data in credits:
-                crew_mappings = [
-                    {
-                        "page_ref": member["ref"],
-                        "name": member["name"]
-                    }
-                    for member in crew_data
-                ]
-                all_crew_mappings.extend(crew_mappings)
+                all_crew.extend({"page_ref": m["ref"], "name": m["name"]} for m in crew_data)
+                all_credits.extend({
+                    "film_id": film_ref,
+                    "crew_id": m["ref"],
+                    "role_id": role_lookup.get(m["role"]),
+                    "rank": m["rank"]
+                } for m in crew_data)
 
-                credits_mappings = [
-                    {
-                        "film_id": film_ref,
-                        "crew_id": member["ref"],
-                        "role_id": role_lookup.get(member["role"]),
-                        "rank": member["rank"]
-                    }
-                    for member in crew_data
-                ]
-                all_credits_mappings.extend(credits_mappings)
-
-            # Step 4: Bulk insert crew members
-            if all_crew_mappings:
-                self.repo.insert(all_crew_mappings, Crew, self.crew_conflicts)
-
-            # Step 5: Upsert all credits in bulk
-            if all_credits_mappings:
-                self.repo.upsert(all_credits_mappings, Credit, self.credit_conflicts, self.credit_updates)
-
-            print(f"Credits upserted: {len(all_credits_mappings)} created, {len(all_credits_mappings)} updated.")
+            if all_crew:
+                self.repo.insert(all_crew, Crew, self.repo.crew_conflicts)
+            if all_credits:
+                self.repo.upsert(all_credits, Credit, self.repo.credit_conflicts, 
+                                 self.repo.credit_updates, fk_filter=self.repo.credit_fk_filter)
 
         except Exception as e:
             print(f"Error during credit upsert: {e}")

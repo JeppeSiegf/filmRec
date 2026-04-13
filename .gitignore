@@ -1,4 +1,5 @@
 *.env
-*/filmrec.egg-info
+*.egg-info
 /recommendationEngine/models/
-
+.venv
+__pycache__/

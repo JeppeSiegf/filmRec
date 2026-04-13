@@ -86,81 +86,43 @@ class FilmService:
 
         return inserted_films
 
-
     def update_multiple_films(self, films: list):
-        """Validate scraped data and update database."""
         if not films:
-            print("No collectors provided.")
             return []
 
-        # Get existing refs for validation
-        film_refs = [film['page_ref'] for film in films]
-        existing_refs = set(
-            r.page_ref for r in self.repo.get_films_by_refs(film_refs)
-        )
-
-        # Filter to only valid collectors
-        valid_film = [
-            film for film in films
-            if film['page_ref'] in existing_refs
-        ]
-
-        if not films:
-            print("No valid film references found.")
-            return []
-
-        updated_films_data = []
+        
+        series_map = {s.page_ref: s.id for s in self.series_service.get_all()}
         allowed_columns = {
             'page_ref', 'title', 'title_original', 'description',
             'image_ref', 'image_ref_large', 'banner_ref', 'release_year',
             'runtime', 'total_watches', 'last_update', 'imdb_ref', 'avg_rating', 'series_id'
         }
 
-        series_map = {s.page_ref: s.id for s in self.series_service.get_all()}
+        to_upsert = []
+        for film in films:
+            cleaned = {k: v for k, v in film.items() if k in allowed_columns}
+            if cleaned.get('series_id'):
+                cleaned['series_id'] = series_map.get(cleaned['series_id'])
+            to_upsert.append(cleaned)
 
-        for film in valid_film:
-            film_data = film
-            cleaned_attributes = {k: v for k, v in film_data.items() if k in allowed_columns}
+        self.repo.upsert(to_upsert)
 
-            # Map series_id from page_ref to actual id
-            if cleaned_attributes.get("series_id"):
-                cleaned_attributes["series_id"] = series_map.get(cleaned_attributes["series_id"], None)
+        all_genres, all_languages, all_credits = [], [], []
+        for film in films:
+            if film.get('genres'):
+                all_genres.append((film['page_ref'], film['genres']))
+            if film.get('languages'):
+                all_languages.append((film['page_ref'], film['languages']))
+            credits = [*film.get('crew', []), *film.get('cast', [])]
+            if credits:
+                all_credits.append((film['page_ref'], credits))
 
-            updated_films_data.append(cleaned_attributes)
+        if all_genres: self.genre_service.update_film_genres(all_genres)
+        if all_languages: self.lang_service.bulk_update_film_languages(all_languages)
+        if all_credits: self.crew_service.add_film_credits_bulk(all_credits)
 
-        self.repo.upsert(updated_films_data)
+        return [film['page_ref'] for film in films]
 
-        # Process associated tables
-        all_genres = []
-        all_languages = []
-        all_credits = []
-
-        for film in valid_film:
-            film_data = film
-
-            if film_data.get('genres'):
-                all_genres.append((film_data['page_ref'], film_data['genres']))
-
-            if film_data.get('languages'):
-                all_languages.append((film_data['page_ref'], film_data['languages']))
-
-            full_credits = []
-            if film_data.get('crew'):
-                full_credits.extend(film_data['crew'])
-            if film_data.get('cast'):
-                full_credits.extend(film_data['cast'])
-
-            if full_credits:
-                all_credits.append((film_data['page_ref'], full_credits))
-
-        if all_genres:
-            self.genre_service.update_film_genres(all_genres)
-        if all_languages:
-            self.lang_service.bulk_update_film_languages(all_languages)
-        if all_credits:
-            self.crew_service.add_film_credits_bulk(all_credits)
-
-        return [film['page_ref'] for film in valid_film]
 
     def get_films_by_crew_member(self, crew_ref: str):
         # Fetch the credits associated with the crew member
@@ -227,7 +189,7 @@ class FilmService:
     #             print(f"[ERROR] Failed to collect for {film_ref}: {e}")
     #             return None
     #
-    #
+        #
 
     def serialize_credit(self, credit: Credit):
 
